@@ -1,0 +1,196 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > User</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.domain</a>
+</div>
+
+<h1>Coverage Summary for Class: User (org.example.backend.domain)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">User</td>
+<td class="coverageStat">
+  <span class="percent">
+    61.5%
+  </span>
+  <span class="absValue">
+    (8/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    61.5%
+  </span>
+  <span class="absValue">
+    (8/13)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">User$HibernateInstantiator$tZBf1RfB</td>
+  </tr>
+  <tr>
+    <td class="name">User$HibernateProxy$2c6BmbdO</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    61.5%
+  </span>
+  <span class="absValue">
+    (8/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    61.5%
+  </span>
+  <span class="absValue">
+    (8/13)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.domain;
+&nbsp;
+&nbsp;import jakarta.persistence.*;
+&nbsp;import org.hibernate.annotations.Cascade;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Entity
+&nbsp;@DiscriminatorValue(value = &quot;User&quot;)
+<b class="fc">&nbsp;public class User extends AbstractUser {</b>
+&nbsp;    @OneToOne(mappedBy = &quot;user&quot;)
+&nbsp;    @Cascade(org.hibernate.annotations.CascadeType.ALL)
+&nbsp;    private Permission permission;
+&nbsp;    @ManyToMany
+&nbsp;    private List&lt;Event&gt; favouriteEvents;
+&nbsp;
+&nbsp;    @ManyToMany
+&nbsp;    private List&lt;Post&gt; favouritePosts;
+&nbsp;
+&nbsp;    @OneToMany(mappedBy = &quot;user&quot;)
+&nbsp;    private List&lt;EnrollForm&gt; enrollForms;
+&nbsp;
+&nbsp;    @ManyToMany(mappedBy = &quot;participants&quot;)
+&nbsp;    private List&lt;AbstractEnrollment&gt; enrollments;
+&nbsp;
+&nbsp;    @ManyToMany
+&nbsp;    @JoinTable(name = &quot;score&quot;,
+&nbsp;            joinColumns = {@JoinColumn(name = &quot;user_id&quot;)},
+&nbsp;            inverseJoinColumns = {@JoinColumn(name = &quot;event_id&quot;)})
+&nbsp;    private List&lt;Event&gt; scoredEvents;
+&nbsp;
+&nbsp;    public Permission getPermission() {
+<b class="fc">&nbsp;        return permission;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setPermission(Permission permission) {
+<b class="fc">&nbsp;        this.permission = permission;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public List&lt;AbstractEnrollment&gt; getEnrollments() {
+<b class="fc">&nbsp;        return enrollments;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setEnrollments(List&lt;AbstractEnrollment&gt; enrollments) {
+<b class="nc">&nbsp;        this.enrollments = enrollments;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public List&lt;EnrollForm&gt; getEnrollForms() {
+<b class="nc">&nbsp;        return enrollForms;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setEnrollForms(List&lt;EnrollForm&gt; enrollForms) {
+<b class="nc">&nbsp;        this.enrollForms = enrollForms;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public List&lt;Event&gt; getScoredEvents() {
+<b class="fc">&nbsp;        return scoredEvents;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setScoredEvents(List&lt;Event&gt; scoredEvents) {
+<b class="nc">&nbsp;        this.scoredEvents = scoredEvents;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public List&lt;Event&gt; getFavouriteEvents() {
+<b class="fc">&nbsp;        return favouriteEvents;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setFavouriteEvents(List&lt;Event&gt; favouriteEvents) {
+<b class="fc">&nbsp;        this.favouriteEvents = favouriteEvents;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public List&lt;Post&gt; getFavouritePosts() {
+<b class="fc">&nbsp;        return favouritePosts;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    public void setFavouritePosts(List&lt;Post&gt; favouritePosts) {
+<b class="nc">&nbsp;        this.favouritePosts = favouritePosts;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

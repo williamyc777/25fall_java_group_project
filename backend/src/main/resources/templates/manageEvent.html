@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Events - NYU Activity Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/main">NYU Activity Center</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/main">Events</a>
+                <a class="nav-link" href="/square">Posts</a>
+                <a class="nav-link" href="/message">Messages</a>
+                <a class="nav-link" href="/event/create">Create Event</a>
+                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>My Posted Events</h2>
+        <div id="eventList" class="mt-4">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function getToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'token') {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        async function loadMyEvents() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                console.log('loadMyEvents - Fetching events with token:', token ? 'present' : 'missing');
+                const response = await fetch('/event/hold', {
+                    headers: { 'Authorization': token }
+                });
+                console.log('loadMyEvents - Response status:', response.status);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('loadMyEvents - Response data:', result);
+                    const events = result.data || result;
+                    console.log('loadMyEvents - Parsed events:', events);
+                    renderEvents(Array.isArray(events) ? events : []);
+                } else {
+                    const errorText = await response.text();
+                    console.error('loadMyEvents - Error response:', errorText);
+                    document.getElementById('eventList').innerHTML = '<p class="text-danger">Failed to load: ' + response.status + '</p>';
+                }
+            } catch (error) {
+                console.error('loadMyEvents - Exception:', error);
+                    document.getElementById('eventList').innerHTML = '<p class="text-danger">Failed to load, please refresh and try again</p>';
+            }
+        }
+
+        function renderEvents(events) {
+            const container = document.getElementById('eventList');
+            console.log('renderEvents - events array:', events);
+            if (!events || events.length === 0) {
+                container.innerHTML = '<p>You haven\'t created any events yet</p>';
+                return;
+            }
+            container.innerHTML = events.map(event => {
+                // EventBriefDto uses eventId instead of id
+                const eventId = event.eventId || event.id;
+                const eventName = event.eventName || event.name || 'Events';
+                console.log('renderEvents - rendering event:', eventId, eventName);
+                return `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">${eventName}</h5>
+                        <p class="card-text">${event.introduction || ''}</p>
+                        <a href="/event?id=${eventId}" class="btn btn-primary">View Details</a>
+                        <a href="/event/getExcel?id=${eventId}" class="btn btn-success">Export Application List</a>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        window.addEventListener('DOMContentLoaded', loadMyEvents);
+    </script>
+</body>
+</html>
+
+

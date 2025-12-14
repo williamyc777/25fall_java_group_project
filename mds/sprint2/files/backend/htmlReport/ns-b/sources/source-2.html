@@ -1,0 +1,232 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > WebSocketServer</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.websocket</a>
+</div>
+
+<h1>Coverage Summary for Class: WebSocketServer (org.example.backend.websocket)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">WebSocketServer</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    44.4%
+  </span>
+  <span class="absValue">
+    (4/9)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    16.7%
+  </span>
+  <span class="absValue">
+    (1/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    30%
+  </span>
+  <span class="absValue">
+    (9/30)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.websocket;
+&nbsp;
+&nbsp;
+&nbsp;import com.google.gson.Gson;
+&nbsp;import jakarta.websocket.*;
+&nbsp;import jakarta.websocket.server.PathParam;
+&nbsp;import jakarta.websocket.server.ServerEndpoint;
+&nbsp;import org.example.backend.service.MessageService;
+&nbsp;import org.example.backend.util.JwtUtil;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Component;
+&nbsp;
+&nbsp;import java.io.IOException;
+&nbsp;import java.util.concurrent.ConcurrentHashMap;
+&nbsp;import java.util.concurrent.CopyOnWriteArrayList;
+&nbsp;import java.util.logging.Logger;
+&nbsp;
+&nbsp;@ServerEndpoint(&quot;/websocket/{token}&quot;)
+&nbsp;@Component
+<b class="fc">&nbsp;public class WebSocketServer {</b>
+&nbsp;    private Session session;
+&nbsp;
+<b class="fc">&nbsp;    private static final ConcurrentHashMap&lt;Long, Session&gt; sessionPool = new ConcurrentHashMap&lt;&gt;();</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final CopyOnWriteArrayList&lt;WebSocketServer&gt; webSockets = new CopyOnWriteArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger logger = Logger.getLogger(WebSocketServer.class.getName());</b>
+&nbsp;
+&nbsp;    private static MessageService messageService;
+&nbsp;
+<b class="fc">&nbsp;    private static final Gson gson = new Gson();</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    public void setChatService(MessageService messageService) {
+<b class="fc">&nbsp;        WebSocketServer.messageService = messageService;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 建立WebSocket连接
+&nbsp;     *
+&nbsp;     * @param session
+&nbsp;     * @param token   用户token信息
+&nbsp;     */
+&nbsp;    @OnOpen
+&nbsp;    public void onOpen(Session session, @PathParam(&quot;token&quot;) String token) {
+<b class="nc">&nbsp;        long userId = JwtUtil.getIdByToken(token);</b>
+<b class="nc">&nbsp;        logger.info(String.format(&quot;WebSocket建立连接中,连接用户ID：{%d}&quot;, userId));</b>
+<b class="nc">&nbsp;        Session historySession = sessionPool.get(userId);</b>
+<b class="nc">&nbsp;        if (historySession != null) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                sessionPool.remove(userId);</b>
+<b class="nc">&nbsp;                historySession.close();</b>
+<b class="nc">&nbsp;                webSockets.spliterator().forEachRemaining(wss -&gt; {</b>
+<b class="nc">&nbsp;                    if (wss.session.equals(historySession)) webSockets.remove(wss);</b>
+&nbsp;                });
+<b class="nc">&nbsp;            } catch (IOException e) {</b>
+<b class="nc">&nbsp;                logger.severe(String.format(&quot;关闭历史连接发生错误：&quot; + e.getMessage()));</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;        // 建立连接
+<b class="nc">&nbsp;        this.session = session;</b>
+<b class="nc">&nbsp;        webSockets.addIfAbsent(this);</b>
+<b class="nc">&nbsp;        sessionPool.put(userId, session);</b>
+<b class="nc">&nbsp;        logger.info(String.format(&quot;建立连接完成,当前在线人数为：{%d}&quot;, webSockets.size()));</b>
+&nbsp;        //TODO: 推送未读消息
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 发生错误
+&nbsp;     *
+&nbsp;     * @param throwable e
+&nbsp;     */
+&nbsp;    @OnError
+&nbsp;    public void onError(Throwable throwable) {
+<b class="nc">&nbsp;        logger.severe(String.format(&quot;WebSocket发生错误,错误信息：%s&quot;, throwable.getMessage()));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 连接关闭
+&nbsp;     */
+&nbsp;    @OnClose
+&nbsp;    public void onClose() {
+<b class="nc">&nbsp;        webSockets.remove(this);</b>
+<b class="nc">&nbsp;        logger.info(String.format(&quot;连接关闭,当前在线人数为：{%d}&quot;, webSockets.size()));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 接收客户端消息
+&nbsp;     *
+&nbsp;     * @param message 接收的消息
+&nbsp;     */
+&nbsp;    @OnMessage
+&nbsp;    public void onMessage(String message) {
+<b class="nc">&nbsp;        logger.info(String.format(&quot;接收到客户端发来的消息：%s&quot;, message));</b>
+&nbsp;//        String[] messages = message.split(&quot; &quot;);
+&nbsp;//        sendMessageToUser(Long.parseLong(messages[0]), messages[1]);
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 推送消息到指定用户
+&nbsp;     *
+&nbsp;     * @param userId  用户ID
+&nbsp;     * @param message 发送的消息
+&nbsp;     */
+&nbsp;    public static void sendMessageToUser(long userId, String message) {
+<b class="fc">&nbsp;        logger.info(String.format(&quot;被推送的用户ID：&quot; + userId + &quot;,推送内容：&quot; + message));</b>
+<b class="fc">&nbsp;        Session session = sessionPool.get(userId);</b>
+<b class="pc">&nbsp;        if (session != null) {</b>
+&nbsp;            try {
+<b class="nc">&nbsp;                session.getBasicRemote().sendText(message);</b>
+<b class="nc">&nbsp;            } catch (IOException e) {</b>
+<b class="nc">&nbsp;                logger.severe(String.format(&quot;推送消息到指定用户发生错误：&quot; + e.getMessage()));</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

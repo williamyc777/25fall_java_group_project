@@ -1,0 +1,216 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > EventServiceImpl</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.service</a>
+</div>
+
+<h1>Coverage Summary for Class: EventServiceImpl (org.example.backend.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">EventServiceImpl</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    69.2%
+  </span>
+  <span class="absValue">
+    (9/13)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (3/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    73.1%
+  </span>
+  <span class="absValue">
+    (19/26)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.service;
+&nbsp;
+&nbsp;import org.checkerframework.checker.units.qual.A;
+&nbsp;import org.example.backend.api.AbstractEnrollmentRepository;
+&nbsp;import org.example.backend.api.EnrollFormRepository;
+&nbsp;import org.example.backend.api.EventRepository;
+&nbsp;import org.example.backend.api.ScoreRepository;
+&nbsp;import org.example.backend.domain.*;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;@Service
+<b class="fc">&nbsp;public class EventServiceImpl implements EventService {</b>
+&nbsp;    @Autowired
+&nbsp;    EventRepository eventRepository;
+&nbsp;    @Autowired
+&nbsp;    EnrollFormRepository enrollFormRepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    ScoreRepository scoreRepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    AbstractEnrollmentRepository abstractEnrollmentRepository;
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean saveEvent(Event event) {
+<b class="fc">&nbsp;        eventRepository.save(event);</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean deleteEventById(long id) {
+<b class="nc">&nbsp;        eventRepository.deleteById(id);</b>
+<b class="nc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean updateEvent(Event event) {
+<b class="fc">&nbsp;        eventRepository.save(event);</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public Event findEventById(long id) {
+<b class="fc">&nbsp;        return eventRepository.findById(id).orElse(null);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Event&gt; findAllEvents() {
+<b class="nc">&nbsp;        return eventRepository.findAll();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Event&gt; findEventByAuthorId(long authorId) {
+<b class="fc">&nbsp;        return eventRepository.findEventByAuthorId(authorId);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean saveEnrollForm(EnrollForm enrollForm) {
+<b class="fc">&nbsp;        enrollFormRepository.save(enrollForm);</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public long getScore(long userId, long eventId) {
+<b class="fc">&nbsp;        Score score = scoreRepository.findScoreByUserIdAndEventId(userId, eventId);</b>
+<b class="pc">&nbsp;        if (score == null) {</b>
+<b class="fc">&nbsp;            return 0;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return score.getScore();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean saveScore(long userId, long eventId, long score) {
+<b class="fc">&nbsp;        Score scoreObj = new Score();</b>
+<b class="fc">&nbsp;        scoreObj.setUserId(userId);</b>
+<b class="fc">&nbsp;        scoreObj.setEventId(eventId);</b>
+<b class="fc">&nbsp;        scoreObj.setScore(score);</b>
+<b class="fc">&nbsp;        scoreRepository.save(scoreObj);</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean deleteEvent(long eventId) {
+<b class="nc">&nbsp;        eventRepository.deleteById(eventId);</b>
+<b class="nc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public boolean appliedByUser(long userId, long eventId) {
+<b class="fc">&nbsp;        return abstractEnrollmentRepository.findAbstractEnrollmentByEventIdAndParticipantsId(eventId, userId) != null;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Override
+&nbsp;    public List&lt;Event&gt; searchEvent(String keyword) {
+<b class="nc">&nbsp;        return eventRepository.findAllByTextContainingIgnoreCaseOrIntroductionContainingIgnoreCaseOrNameContainingIgnoreCaseOrTitleContainingIgnoreCase(keyword, keyword, keyword, keyword);</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

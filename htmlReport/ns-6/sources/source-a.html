@@ -1,0 +1,157 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > PostDto</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.dto</a>
+</div>
+
+<h1>Coverage Summary for Class: PostDto (org.example.backend.dto)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PostDto</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    95.2%
+  </span>
+  <span class="absValue">
+    (20/21)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    54.1%
+  </span>
+  <span class="absValue">
+    (20/37)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.dto;
+&nbsp;
+&nbsp;import lombok.Getter;
+&nbsp;import lombok.Setter;
+&nbsp;import org.example.backend.domain.AbstractUser;
+&nbsp;import org.example.backend.domain.Event;
+&nbsp;import org.example.backend.domain.Post;
+&nbsp;import org.example.backend.domain.User;
+&nbsp;
+<b class="fc">&nbsp;@Setter</b>
+&nbsp;@Getter
+&nbsp;public class PostDto {
+<b class="fc">&nbsp;    private long postID;</b>
+<b class="fc">&nbsp;    private String postLink;</b>
+<b class="fc">&nbsp;    private String postTitle;</b>
+<b class="fc">&nbsp;    private String postContent;</b>
+<b class="fc">&nbsp;    private long postRelevantEventID;</b>
+<b class="fc">&nbsp;    private int postLikeAmount;</b>
+<b class="fc">&nbsp;    private int postCollectAmount;</b>
+<b class="fc">&nbsp;    private int postCommentAmount;</b>
+<b class="fc">&nbsp;    private String username;</b>
+<b class="fc">&nbsp;    private Long userID;</b>
+<b class="fc">&nbsp;    private String userBio;</b>
+<b class="fc">&nbsp;    private String userAvatar;</b>
+<b class="fc">&nbsp;    private String eventLink;</b>
+<b class="fc">&nbsp;    private String eventName;</b>
+<b class="fc">&nbsp;    private String eventIntroduction;</b>
+<b class="fc">&nbsp;    private String eventPoster;</b>
+<b class="fc">&nbsp;    private boolean likeOrNot;</b>
+<b class="fc">&nbsp;    private boolean collectOrNot;</b>
+&nbsp;
+<b class="fc">&nbsp;    public PostDto() {</b>
+&nbsp;    }
+&nbsp;
+<b class="nc">&nbsp;    public PostDto(Post post) {</b>
+<b class="nc">&nbsp;        Event event = post.getEvent();</b>
+<b class="nc">&nbsp;        AbstractUser user = post.getUser();</b>
+<b class="nc">&nbsp;        this.postID = post.getId();</b>
+<b class="nc">&nbsp;        this.postLink = String.valueOf(post.getId());</b>
+<b class="nc">&nbsp;        this.postTitle = post.getPostTitle();</b>
+<b class="nc">&nbsp;        this.postContent = post.getPostContent();</b>
+<b class="nc">&nbsp;        this.postRelevantEventID = event.getId();</b>
+<b class="nc">&nbsp;        this.postLikeAmount = post.getLikeUsers().size();</b>
+<b class="nc">&nbsp;        this.username = user.getUsername();</b>
+<b class="nc">&nbsp;        this.userID = user.getId();</b>
+<b class="nc">&nbsp;        this.userBio = user.getBio();</b>
+<b class="nc">&nbsp;        this.userAvatar = user.getAvatar();</b>
+<b class="nc">&nbsp;        this.eventLink = String.valueOf(event.getId());</b>
+<b class="nc">&nbsp;        this.eventName = event.getName();</b>
+<b class="nc">&nbsp;        this.eventIntroduction = event.getIntroduction();</b>
+<b class="nc">&nbsp;        this.eventPoster = event.getPosterUrl();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

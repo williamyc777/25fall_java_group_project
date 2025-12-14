@@ -1,0 +1,62 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+target/
+backend/target/
+frontend/dist/
+frontend/build/
+
+# Database files
+backend/h2db/
+*.db
+*.mv.db
+*.lock.db
+
+# Logs
+*.log
+/tmp/
+logs/
+
+# Node modules
+node_modules/
+frontend/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Images (user uploaded)
+backend/images/
+!backend/images/.gitkeep
+
+# Environment variables
+.env
+.env.local
+application-local.yml
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Spring Boot
+application-*.yml
+!application.yml
+!application-dev.yml
+
+# Coverage reports
+htmlReport/
+*.exec
+
+# Other
+*.class
+*.jar
+*.war
+*.ear

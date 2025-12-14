@@ -1,0 +1,103 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > MessageService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.service</a>
+</div>
+
+<h1>Coverage Summary for Class: MessageService (org.example.backend.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+</tr>
+<tr>
+  <td class="name">MessageService</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.service;
+&nbsp;
+&nbsp;import org.example.backend.domain.Message;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;public interface MessageService {
+&nbsp;    boolean saveMessage(Message message);
+&nbsp;
+&nbsp;    boolean deleteMessageById(long id);
+&nbsp;
+&nbsp;    boolean updateMessage(Message message);
+&nbsp;
+&nbsp;    Message findMessageById(long id);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByType(String type);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findAllMessage();
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByFromId(long id);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByToUserId(long id);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByFromIdAndToUserId(long fromId, long toId);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByFromIdAndToUserIdAndType(long fromId, long toId, String type);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByFromIdAndType(long fromId, String type);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByToUserIdAndType(long toId, String type);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByToUserIdAndRead(long toId, boolean read);
+&nbsp;
+&nbsp;    List&lt;Message&gt; findMessageByToUserIdAndTypeAndRead(long toId, String type, boolean read);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

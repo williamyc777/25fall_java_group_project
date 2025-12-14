@@ -1,0 +1,56 @@
+#server:
+#  port: 8082
+#spring:
+#  datasource:
+#    driver-class-name: org.postgresql.Driver
+#    url: jdbc:postgresql://localhost:5432/cs304_database
+##    url: jdbc:postgresql://postgres:5432/cs304_database
+#    username: postgres
+#    password: postgres
+#  jackson:
+#    default-property-inclusion: NON_NULL
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#      dialect: org.hibernate.dialect.PostgreSQL92Dialect
+#    show-sql: true
+#    properties:
+#      hibernate:
+#        temp:
+#          use_jdbc_metadata_defaults: true
+#image-server:
+##  path: backend/src/main/resources/images
+#  path: ./images
+server:
+  port: 8082
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/cs304_database?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: LYX112601lyx
+  jackson:
+    default-property-inclusion: NON_NULL
+  jpa:
+    hibernate:
+      ddl-auto: update
+      dialect: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    properties:
+      hibernate:
+        temp:
+          use_jdbc_metadata_defaults: true
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+  web:
+    resources:
+      static-locations: classpath:/static/
+      add-mappings: true
+
+image-server:
+  path: ./images

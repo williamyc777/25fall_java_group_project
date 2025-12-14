@@ -1,0 +1,208 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > ImageApp</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.app</a>
+</div>
+
+<h1>Coverage Summary for Class: ImageApp (org.example.backend.app)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">ImageApp</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    40%
+  </span>
+  <span class="absValue">
+    (2/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    14.8%
+  </span>
+  <span class="absValue">
+    (4/27)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.app;
+&nbsp;
+&nbsp;import jakarta.servlet.ServletOutputStream;
+&nbsp;import jakarta.servlet.http.HttpServletResponse;
+&nbsp;import org.springframework.beans.factory.annotation.Value;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;import org.springframework.web.multipart.MultipartFile;
+&nbsp;
+&nbsp;import java.io.File;
+&nbsp;import java.io.FileInputStream;
+&nbsp;import java.nio.file.Path;
+&nbsp;import java.nio.file.Paths;
+&nbsp;import java.util.UUID;
+&nbsp;import java.util.logging.Logger;
+&nbsp;
+&nbsp;/**
+&nbsp; * 该类用于处理图片上传下载相关的请求
+&nbsp; * @author Shinomiya
+&nbsp; * @version 1.0
+&nbsp; */
+<b class="fc">&nbsp;@RestController</b>
+&nbsp;@RequestMapping(&quot;/image&quot;)
+<b class="fc">&nbsp;public class ImageApp {</b>
+<b class="fc">&nbsp;    private static final Logger logger = Logger.getLogger(ImageApp.class.getName());</b>
+&nbsp;
+&nbsp;    @Value(&quot;${image-server.path}&quot;)
+&nbsp;    String basePath;
+&nbsp;
+<b class="fc">&nbsp;    private final String IMAGE_PATH = &quot;http://10.16.88.247:8082/image/&quot;;</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 上传图片
+&nbsp;     * @param file 上传的图片文件
+&nbsp;     * @return 上传成功后的图片url
+&nbsp;     * @throws Exception 上传失败时抛出异常
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/upload&quot;)
+&nbsp;    public String uploadImage(@RequestParam(&quot;file&quot;) MultipartFile file) throws Exception{
+<b class="nc">&nbsp;        File dir = new File(basePath);</b>
+<b class="nc">&nbsp;        if (!dir.exists()) {</b>
+<b class="nc">&nbsp;            if (!dir.mkdirs()) {</b>
+<b class="nc">&nbsp;                throw new Exception(&quot;Failed to create directory&quot;);</b>
+&nbsp;            }
+&nbsp;        }
+<b class="nc">&nbsp;        String originalFilename = file.getOriginalFilename();</b>
+<b class="nc">&nbsp;        assert originalFilename != null;</b>
+<b class="nc">&nbsp;        String suffix = originalFilename.substring(originalFilename.lastIndexOf(&quot;.&quot;));</b>
+<b class="nc">&nbsp;        String filename = UUID.randomUUID() + suffix;</b>
+<b class="nc">&nbsp;        Path path = Paths.get(basePath, filename);</b>
+<b class="nc">&nbsp;        logger.info(&quot;Image saved, url: &quot; + path);</b>
+<b class="nc">&nbsp;        file.transferTo(path.toAbsolutePath());</b>
+<b class="nc">&nbsp;        return IMAGE_PATH + filename;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 下载图片
+&nbsp;     * @param fileURL 图片url
+&nbsp;     * @param response HttpServletResponse
+&nbsp;     * @throws Exception 下载失败时抛出异常
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/download&quot;)
+&nbsp;    public void downloadImage(@RequestParam(&quot;url&quot;) String fileURL, HttpServletResponse response) throws Exception {
+<b class="nc">&nbsp;        File file = Paths.get(basePath, fileURL).toFile();</b>
+&nbsp;        //输入流，通过输入流读取文件内容
+<b class="nc">&nbsp;        FileInputStream fileInputStream = new FileInputStream(file);</b>
+&nbsp;        //输出流，通过输出流将文件写回浏览器，在浏览器展示图片
+<b class="nc">&nbsp;        ServletOutputStream outputStream = response.getOutputStream();</b>
+<b class="nc">&nbsp;        response.setContentType(&quot;image/&quot; + fileURL.substring(fileURL.lastIndexOf(&quot;.&quot;) + 1));</b>
+&nbsp;
+&nbsp;        int len;
+<b class="nc">&nbsp;        byte[] bytes = new byte[1024];</b>
+<b class="nc">&nbsp;        while((len = fileInputStream.read(bytes))!= -1){</b>
+<b class="nc">&nbsp;            outputStream.write(bytes,0,len);</b>
+<b class="nc">&nbsp;            outputStream.flush();</b>
+&nbsp;        }
+&nbsp;        //关闭资源
+<b class="nc">&nbsp;        outputStream.close();</b>
+<b class="nc">&nbsp;        fileInputStream.close();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 通过url下载图片
+&nbsp;     * @param url 图片url
+&nbsp;     * @param response HttpServletResponse
+&nbsp;     * @throws Exception 下载失败时抛出异常
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;{url}&quot;)
+&nbsp;    public void getImage(@PathVariable String url, HttpServletResponse response) throws Exception {
+<b class="nc">&nbsp;        downloadImage(url, response);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

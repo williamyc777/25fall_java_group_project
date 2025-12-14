@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${eventId != null ? 'Event Details' : 'Events'}">Event Details - NYU Activity Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        .event-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .event-poster {
+            max-width: 100%;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .event-content {
+            margin-top: 20px;
+        }
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .bottom-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        .star-rating {
+            font-size: 24px;
+            color: #ffc107;
+            cursor: pointer;
+        }
+        .star-rating .star {
+            margin-right: 5px;
+        }
+        .star-rating .star:hover {
+            color: #ff9800;
+        }
+        .liked-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .liked-btn.liked {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+        .liked-btn.liked i {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/main">NYU Activity Center</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/main">Events</a>
+                <a class="nav-link" href="/square">Posts</a>
+                <a class="nav-link" href="/message">Messages</a>
+                <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
+                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="event-container">
+        <div class="row">
+            <div class="col-md-8">
+                <div id="eventContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sidebar">
+                    <h5>Related Posts</h5>
+                    <div id="postList">
+                        <!-- Post list will be loaded via JavaScript -->
+                    </div>
+                </div>
+                <!-- 当没有EventsID时，显示Create Event选项 -->
+                <div class="sidebar mt-3" id="createEventSection" style="display: none;">
+                    <h5>Create Event</h5>
+                    <p class="text-muted">No events yet? Create a new event!</p>
+                    <a href="/event/create" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Create Event
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom action bar, only show when event ID exists -->
+    <div class="bottom-actions" id="bottomActions" style="display: none;">
+        <div class="container-fluid">
+            <div class="d-flex justify-content-end align-items-center gap-3">
+                <button id="likeBtn" class="liked-btn" onclick="toggleLike()">
+                    <i class="bi bi-heart"></i> <span id="likeText">Collect</span>
+                </button>
+                <button id="applyBtn" class="btn btn-primary" onclick="applyEvent()">I want to participate</button>
+                <div class="star-rating" id="rating">
+                    <span class="star" data-rating="5" onclick="rate(5)">★</span>
+                    <span class="star" data-rating="4" onclick="rate(4)">★</span>
+                    <span class="star" data-rating="3" onclick="rate(3)">★</span>
+                    <span class="star" data-rating="2" onclick="rate(2)">★</span>
+                    <span class="star" data-rating="1" onclick="rate(1)">★</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Enrollment Modal -->
+    <div class="modal fade" id="applyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">EventsApply</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="applyModalBody">
+                    <!-- Dynamic content -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitApply()">Apply</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        // Get eventId from Thymeleaf template, if null get from URL params
+        let eventId = /*[[${eventId}]]*/ null;
+        
+        // If eventId is null, try to get from URL params
+        if (!eventId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const idParam = urlParams.get('id');
+            if (idParam) {
+                eventId = parseInt(idParam);
+            }
+        }
+        
+        console.log('Event ID:', eventId);
+        
+        let currentEvent = null;
+        let isLiked = false;
+        let currentRating = 0;
+
+        function getToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'token') {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        let isLoadingEvent = false;
+        
+        async function loadEvent() {
+            // Prevent duplicate loading
+            if (isLoadingEvent) {
+                console.log('Event already loading, skipping...');
+                return;
+            }
+            
+            if (!eventId) {
+                document.getElementById('eventContent').innerHTML = '<div class="text-center"><h3>Please select an event</h3><p class="text-muted">Select an event to view details, or create a new event</p></div>';
+                // 显示Create Event选项
+                document.getElementById('createEventSection').style.display = 'block';
+                // Hide related posts area
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) sidebar.style.display = 'none';
+                // Hide bottom action bar
+                const bottomActions = document.getElementById('bottomActions');
+                if (bottomActions) bottomActions.style.display = 'none';
+                return;
+            }
+            
+            isLoadingEvent = true;
+            // Clear content, show loading state
+            document.getElementById('eventContent').innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            
+            // 隐藏Create Event选项
+            document.getElementById('createEventSection').style.display = 'none';
+            // 显示底部Actions栏（Event Details页）
+            const bottomActions = document.getElementById('bottomActions');
+            if (bottomActions) bottomActions.style.display = 'block';
+
+            try {
+                const token = getToken();
+                const headers = token ? { 'Authorization': token } : {};
+                
+                // Add timestamp to prevent caching
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/event/detail?id=${eventId}&t=${timestamp}`, { 
+                    headers,
+                    cache: 'no-cache'
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('loadEvent - API response:', result);
+                    currentEvent = result.data || result;
+                    console.log('loadEvent - Parsed event:', currentEvent);
+                    if (!currentEvent || (!currentEvent.title && !currentEvent.eventName)) {
+                        console.error('loadEvent - Event data is incomplete:', currentEvent);
+                        document.getElementById('eventContent').innerHTML = '<p class="text-danger">Event information incomplete</p>';
+                    } else {
+                        await renderEvent(currentEvent);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('loadEvent - Failed to load event:', response.status, errorText);
+                    document.getElementById('eventContent').innerHTML = '<p class="text-danger">Failed to load: ' + response.status + '</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load event:', error);
+                document.getElementById('eventContent').innerHTML = '<p>Failed to load</p>';
+            } finally {
+                isLoadingEvent = false;
+            }
+        }
+
+        async function renderEvent(event) {
+            const stars = '⭐'.repeat(Math.floor(event.score || 0));
+            
+            // Update apply button state
+            updateApplyButton(event.applied || false);
+            
+            // Get current user info from API, check if is event creator
+            let isEventAuthor = false;
+            const token = getToken();
+            if (token && eventId) {
+                try {
+                    // Check authorId through event detail API
+                    const authorId = event.authorId;
+                    if (authorId) {
+                        // Get current user info
+                        const userResponse = await fetch('/userInfo', {
+                            headers: { 'Authorization': token }
+                        });
+                        if (userResponse.ok) {
+                            const userResult = await userResponse.json();
+                            const currentUser = userResult.data || userResult;
+                            if (currentUser && currentUser.id == authorId) {
+                                isEventAuthor = true;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to check if user is event author:', error);
+                }
+            }
+            
+            let exportButton = '';
+            if (isEventAuthor) {
+                exportButton = `<a href="/event/getExcel?id=${eventId}" class="btn btn-success mb-3"><i class="bi bi-download"></i> Export Enrollment List</a>`;
+            }
+            
+            const content = `
+                ${exportButton}
+                <h1>${event.title || ''}</h1>
+                <p class="text-primary">${event.eventName || event.name || ''}</p>
+                <p><small>Enrollment Time: ${formatTime(event.applyStartTime)} - ${formatTime(event.applyEndTime)}</small></p>
+                <p><small>Event Time: ${formatTime(event.startTime)} - ${formatTime(event.endTime)}</small></p>
+                <p>${stars}</p>
+                ${event.postUrl ? `<img src="${event.postUrl}" class="event-poster" alt="Event Poster">` : ''}
+                <div class="event-content">
+                    ${event.text ? `<div>${event.text}</div>` : ''}
+                </div>
+            `;
+            document.getElementById('eventContent').innerHTML = content;
+            
+            isLiked = event.liked || false;
+            updateLikeButton();
+            
+            // Update apply button state
+            updateApplyButton(event.applied || false);
+            
+            currentRating = Math.floor(event.score || 0);
+            updateRating();
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr) return '';
+            return new Date(timeStr).toLocaleString('en-US');
+        }
+
+        async function toggleLike() {
+            const token = getToken();
+            if (!token) {
+                alert('Please login first');
+                window.location.href = '/';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('id', eventId);
+
+            try {
+                const url = isLiked ? '/event/unfavor' : '/event/favor';
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': token },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    isLiked = !isLiked;
+                    updateLikeButton();
+                }
+            } catch (error) {
+                console.error('Failed to toggle like:', error);
+            }
+        }
+
+        function updateLikeButton() {
+            const btn = document.getElementById('likeBtn');
+            const text = document.getElementById('likeText');
+            if (isLiked) {
+                btn.classList.add('liked');
+                text.textContent = 'Collected';
+            } else {
+                btn.classList.remove('liked');
+                text.textContent = 'Collect';
+            }
+        }
+
+        function rate(rating) {
+            const token = getToken();
+            if (!token) {
+                alert('Please login first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('id', eventId);
+            formData.append('grade', rating);
+
+            fetch('/event/grade', {
+                method: 'POST',
+                headers: { 'Authorization': token },
+                body: formData
+            }).then(() => {
+                currentRating = rating;
+                updateRating();
+            }).catch(error => {
+                console.error('Failed to rate:', error);
+            });
+        }
+
+        function updateRating() {
+            const stars = document.querySelectorAll('.star-rating .star');
+            stars.forEach((star, index) => {
+                const rating = 5 - index;
+                if (rating <= currentRating) {
+                    star.style.color = '#ffc107';
+                } else {
+                    star.style.color = '#ccc';
+                }
+            });
+        }
+
+        let isApplied = false;
+        
+        function updateApplyButton(applied) {
+            isApplied = applied;
+            const applyBtn = document.getElementById('applyBtn');
+            if (applyBtn) {
+                if (applied) {
+                    applyBtn.textContent = 'Applied';
+                    applyBtn.classList.remove('btn-primary');
+                    applyBtn.classList.add('btn-success');
+                    applyBtn.disabled = true;
+                    applyBtn.onclick = null;
+                } else {
+                    applyBtn.textContent = 'I want to participate';
+                    applyBtn.classList.remove('btn-success');
+                    applyBtn.classList.add('btn-primary');
+                    applyBtn.disabled = false;
+                    applyBtn.onclick = applyEvent;
+                }
+            }
+        }
+        
+        function applyEvent() {
+            const token = getToken();
+            if (!token) {
+                alert('Please login first');
+                window.location.href = '/';
+                return;
+            }
+
+            if (!currentEvent) {
+                alert('Event information not loaded');
+                return;
+            }
+            
+            // If already applied, do not allow duplicate application
+            if (isApplied || currentEvent.applied) {
+                alert('You have already applied to this event');
+                return;
+            }
+
+            const enrollmentType = currentEvent.enrollmentType;
+            const modalBody = document.getElementById('applyModalBody');
+            
+            if (enrollmentType === 'count') {
+                modalBody.innerHTML = `
+                    <p>Current Enrollment: ${currentEvent.currentCount || 0}/${currentEvent.limit || 'Unlimited'}</p>
+                `;
+            } else if (enrollmentType === 'form') {
+                const form = currentEvent.definedForm || [];
+                let formHtml = '<form id="applyForm">';
+                form.forEach((item, index) => {
+                    formHtml += `
+                        <div class="mb-3">
+                            <label class="form-label">${item.name}</label>
+                            ${item.type === 'input' ? 
+                                `<input type="text" class="form-control" name="formValues[]" ${item.required ? 'required' : ''}>` :
+                                `<select class="form-select" name="formValues[]" ${item.required ? 'required' : ''}>
+                                    ${(item.options || []).map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                </select>`
+                            }
+                        </div>
+                    `;
+                });
+                formHtml += '</form>';
+                modalBody.innerHTML = formHtml;
+            }
+
+            new bootstrap.Modal(document.getElementById('applyModal')).show();
+        }
+
+        function submitApply() {
+            const token = getToken();
+            const formData = new FormData();
+            formData.append('id', eventId);
+
+            const form = document.getElementById('applyForm');
+            if (form) {
+                const formValues = Array.from(form.querySelectorAll('[name="formValues[]"]')).map(input => input.value);
+                formValues.forEach(value => formData.append('formValues[]', value));
+            }
+
+            fetch('/event/apply', {
+                method: 'POST',
+                headers: { 'Authorization': token },
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    alert('Enrollment successful！');
+                    bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide();
+                    // 强制重新加载Event Details，清除可能的缓存
+                    isLoadingEvent = false;
+                    // Add timestamp to prevent caching
+                    const timestamp = new Date().getTime();
+                    loadEvent();
+                } else {
+                    response.text().then(text => {
+                        try {
+                            const error = JSON.parse(text);
+                            alert('Enrollment failed: ' + (error.msg || error.message || 'Unknown error'));
+                        } catch (e) {
+                            alert('Enrollment failed: ' + text);
+                        }
+                    });
+                }
+            }).catch(error => {
+                console.error('Failed to apply:', error);
+                alert('Enrollment failed: ' + error.message);
+            });
+        }
+
+
+        // 页面加载时执行 - 统一使用pageshow事件，避免重复加载
+        let hasLoaded = false;
+        
+        function initEvent() {
+            if (hasLoaded) {
+                console.log('Event page already initialized, skipping...');
+                return;
+            }
+            hasLoaded = true;
+            loadEvent();
+        }
+        
+        window.addEventListener('DOMContentLoaded', initEvent);
+        
+        // 如果页面是通过浏览器前进/后退按钮加载的，也强制刷新
+        window.addEventListener('pageshow', function(event) {
+            console.log('pageshow - event.persisted:', event.persisted);
+            // 如果从缓存恢复，重置标志并重新加载
+            if (event.persisted) {
+                hasLoaded = false;
+            }
+            initEvent();
+        });
+    </script>
+</body>
+</html>
+

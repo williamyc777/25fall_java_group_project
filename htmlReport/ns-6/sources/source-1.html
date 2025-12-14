@@ -1,0 +1,152 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > AbstractUserDto</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.dto</a>
+</div>
+
+<h1>Coverage Summary for Class: AbstractUserDto (org.example.backend.dto)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">AbstractUserDto</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/20)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.dto;
+&nbsp;import lombok.Getter;
+&nbsp;import lombok.Setter;
+&nbsp;import org.example.backend.domain.AbstractUser;
+&nbsp;import org.example.backend.domain.Admin;
+&nbsp;import org.example.backend.domain.User;
+&nbsp;import org.example.backend.domain.enums.UserType;
+&nbsp;
+<b class="nc">&nbsp;@Setter</b>
+&nbsp;@Getter
+&nbsp;public class AbstractUserDto {
+<b class="nc">&nbsp;    Long id;</b>
+<b class="nc">&nbsp;    String username;</b>
+<b class="nc">&nbsp;    String name;</b>
+<b class="nc">&nbsp;    String password;</b>
+<b class="nc">&nbsp;    UserType userType;</b>
+<b class="nc">&nbsp;    Boolean hasUnread;</b>
+<b class="nc">&nbsp;    String bio;</b>
+<b class="nc">&nbsp;    String avatar;</b>
+&nbsp;
+<b class="nc">&nbsp;    public AbstractUserDto() {</b>
+&nbsp;    }
+<b class="nc">&nbsp;    public AbstractUserDto(AbstractUser abstractUser) {</b>
+<b class="nc">&nbsp;        this.id  = abstractUser.getId();</b>
+<b class="nc">&nbsp;        this.username = abstractUser.getUsername();</b>
+<b class="nc">&nbsp;        this.name = abstractUser.getName();</b>
+<b class="nc">&nbsp;        this.password = abstractUser.getPassword();</b>
+<b class="nc">&nbsp;        if (abstractUser instanceof Admin) {</b>
+<b class="nc">&nbsp;            this.userType = UserType.Admin;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        if (abstractUser instanceof User){</b>
+<b class="nc">&nbsp;            this.userType = UserType.User;</b>
+&nbsp;        }
+<b class="nc">&nbsp;        this.avatar = abstractUser.getAvatar();</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

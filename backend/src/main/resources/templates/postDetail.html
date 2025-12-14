@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post Details - NYU Activity Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/main">NYU Activity Center</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/square">Back to Post Square</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div id="postContent">
+            <div class="text-center">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+        <div id="comments" class="mt-4">
+            <h4>Comments</h4>
+            <!-- Comments输入框 -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <textarea class="form-control mb-2" id="commentInput" rows="3" placeholder="Write your comment..."></textarea>
+                    <button class="btn btn-primary" onclick="submitComment()">Post Comment</button>
+                </div>
+            </div>
+            <!-- Comments列表 -->
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        // Get postId from Thymeleaf template, if null get from URL params
+        let postId = /*[[${postId}]]*/ null;
+        
+        // If postId is null, try to get from URL params
+        if (!postId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const idParam = urlParams.get('id');
+            if (idParam) {
+                postId = parseInt(idParam);
+            }
+        }
+        
+        console.log('Post ID:', postId);
+
+        async function loadPost() {
+            if (!postId || isNaN(postId)) {
+                document.getElementById('postContent').innerHTML = '<p class="text-danger">Invalid Post ID</p>';
+                return;
+            }
+
+            try {
+                const token = getTokenFromCookie();
+                const headers = {};
+                if (token) {
+                    headers['Authorization'] = token;
+                }
+                const response = await fetch(`/post/getFullPost?postID=${postId}`, {
+                    headers: headers
+                });
+                if (response.ok) {
+                    const responseText = await response.text();
+                    console.log('loadPost - Response text:', responseText);
+                    try {
+                        const result = JSON.parse(responseText);
+                        console.log('loadPost - Parsed result:', result);
+                        // 响应格式: {"code":0,"msg":"success","data":{...}}
+                        const post = result.data || result;
+                        console.log('loadPost - Post data:', post);
+                        if (post && post.postID) {
+                            renderPost(post);
+                            loadComments();
+                        } else {
+                            console.error('loadPost - Invalid post data:', post);
+                            document.getElementById('postContent').innerHTML = 
+                                '<p class="text-danger">Invalid post data format</p>';
+                        }
+                    } catch (e) {
+                        console.error('loadPost - JSON parse error:', e);
+                        // 如果不是JSON，可能是直接返回的PostDto
+                        try {
+                            const post = JSON.parse(responseText);
+                            console.log('loadPost - Direct post data:', post);
+                            if (post && post.postID) {
+                                renderPost(post);
+                                loadComments();
+                            } else {
+                                document.getElementById('postContent').innerHTML = 
+                                    '<p class="text-danger">Invalid post data format</p>';
+                            }
+                        } catch (e2) {
+                            console.error('loadPost - Second parse error:', e2);
+                            document.getElementById('postContent').innerHTML = 
+                                '<p class="text-danger">无法解析响应数据</p>';
+                        }
+                    }
+                } else {
+                    let errorMsg = 'Unknown error';
+                    try {
+                        const error = await response.json();
+                        errorMsg = error.msg || error.message || `HTTP ${response.status}`;
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    console.error('Failed to load post:', errorMsg);
+                    document.getElementById('postContent').innerHTML = 
+                        `<p class="text-danger">Failed to load: ${errorMsg}</p>`;
+                }
+            } catch (error) {
+                console.error('Failed to load post:', error);
+                document.getElementById('postContent').innerHTML = 
+                    `<p class="text-danger">Failed to load: ${error.message || '网络错误'}</p>`;
+            }
+        }
+
+        function renderPost(post) {
+            console.log('renderPost - Post data:', post);
+            // Save当前Posts信息
+            currentPost = post;
+            
+            if (!post) {
+                console.error('renderPost - Post is null or undefined');
+                document.getElementById('postContent').innerHTML = '<p class="text-danger">Posts数据无效</p>';
+                return;
+            }
+            
+            // 根据点赞状态设置按钮样式
+            const likeButtonClass = post.likeOrNot ? 'btn-primary' : 'btn-outline-primary';
+            const likeButtonText = post.likeOrNot ? '👍 Liked' : '👍 Like';
+            
+            // 根据Collect状态设置按钮样式
+            const collectButtonClass = post.collectOrNot ? 'btn-secondary' : 'btn-outline-secondary';
+            const collectButtonText = post.collectOrNot ? '⭐ Collected' : '⭐ Collect';
+            
+            const content = `
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">${post.postTitle || 'No Title'}</h2>
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="${post.userAvatar || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3QgZmlsbD0iI2RkZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIi8+PHRleHQgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGR5PSIyLjUiIGZvbnQtd2VpZ2h0PSJib2xkIiB4PSI1MCUiIHk9IjUwJSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6L2s6L29PC90ZXh0Pjwvc3ZnPg=='}" 
+                                 class="rounded-circle me-2" 
+                                 style="width: 40px; height: 40px; object-fit: cover; cursor: pointer;" 
+                                 alt="头像"
+                                 onclick="goToChat(${post.userId || post.authorId || 'null'})"
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3QgZmlsbD0iI2RkZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIi8+PHRleHQgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGR5PSIyLjUiIGZvbnQtd2VpZ2h0PSJib2xkIiB4PSI1MCUiIHk9IjUwJSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6L2s6L29PC90ZXh0Pjwvc3ZnPg==';">
+                            <div>
+                                <strong style="cursor: pointer;" onclick="goToChat(${post.userId || post.authorId || 'null'})">${post.username || post.userName || 'Unknown User'}</strong>
+                                <small class="text-muted d-block">${post.userBio || ''}</small>
+                            </div>
+                        </div>
+                        <div class="post-content mb-3">
+                            ${(post.postContent || '').replace(/\n/g, '<br>')}
+                        </div>
+                        <div class="d-flex gap-3">
+                            <button class="btn btn-sm ${likeButtonClass}" onclick="likePost(${post.postID})">
+                                ${likeButtonText} (${post.postLikeAmount || 0})
+                            </button>
+                            <button class="btn btn-sm ${collectButtonClass}" onclick="collectPost(${post.postID})">
+                                ${collectButtonText} (${post.postCollectAmount || 0})
+                            </button>
+                            ${post.postRelevantEventID ? 
+                                `<a href="/event?id=${post.postRelevantEventID}" class="btn btn-sm btn-outline-info">查看Related Event</a>` : 
+                                ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('postContent').innerHTML = content;
+        }
+
+        async function loadComments() {
+            try {
+                const response = await fetch(`/comment/event?postId=${postId}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    const comments = result.data || result;
+                    renderComments(Array.isArray(comments) ? comments : []);
+                }
+            } catch (error) {
+                console.error('Failed to load comments:', error);
+            }
+        }
+
+        async function submitComment() {
+            const token = getTokenOrRedirect();
+            if (!token) return;
+
+            const commentText = document.getElementById('commentInput').value.trim();
+            if (!commentText) {
+                alert('Please enter comment content');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('postId', postId.toString());
+                formData.append('comment', commentText);
+
+                const response = await fetch('/user/commentPost', {
+                    method: 'POST',
+                    headers: { 'Authorization': token },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Comment response:', result);
+                    const success = result.data !== undefined ? result.data : result;
+                    if (success === true || success === 'true') {
+                        document.getElementById('commentInput').value = '';
+                        loadComments(); // 重新加载Comments列表
+                        loadPost(); // 重新加载Posts以更新Comments数
+                    } else {
+                        alert('Failed to post comment');
+                    }
+                } else {
+                    const error = await response.json();
+                    alert(error.msg || 'Failed to post comment');
+                }
+            } catch (error) {
+                console.error('Failed to submit comment:', error);
+                alert('Failed to post comment, please try again');
+            }
+        }
+
+        function renderComments(comments) {
+            const container = document.getElementById('comments');
+            // Comments输入框HTML
+            const commentInputHtml = `
+                <h4>Comments</h4>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <textarea class="form-control mb-2" id="commentInput" rows="3" placeholder="Write your comment..."></textarea>
+                        <button class="btn btn-primary" onclick="submitComment()">Post Comment</button>
+                    </div>
+                </div>
+            `;
+            
+            if (comments.length === 0) {
+                container.innerHTML = commentInputHtml + '<p class="text-muted">No comments yet</p>';
+                return;
+            }
+            
+            container.innerHTML = commentInputHtml + comments.map(comment => {
+                // 调试输出
+                console.log('Rendering comment:', comment);
+                console.log('Comment userAvatar:', comment.userAvatar);
+                console.log('Comment userName:', comment.userName);
+                
+                // 构建头像URL
+                let avatarUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3QgZmlsbD0iI2RkZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIi8+PHRleHQgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGR5PSIyLjUiIGZvbnQtd2VpZ2h0PSJib2xkIiB4PSI1MCUiIHk9IjUwJSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6L2s6L29PC90ZXh0Pjwvc3ZnPg==';
+                if (comment.userAvatar && comment.userAvatar.trim() !== '') {
+                    // 移除可能存在的查询参数
+                    let cleanAvatar = comment.userAvatar.split('?')[0];
+                    if (cleanAvatar.startsWith('http://') || cleanAvatar.startsWith('https://')) {
+                        // 完整的HTTP/HTTPS URL，直接使用
+                        avatarUrl = cleanAvatar + '?t=' + Date.now();
+                    } else if (cleanAvatar.startsWith('/image/')) {
+                        // 已经包含 /image/ 前缀，提取文件名并重新构建URL
+                        let filename = cleanAvatar.replace('/image/', '');
+                        avatarUrl = '/image/' + filename + '?t=' + Date.now();
+                    } else if (cleanAvatar.startsWith('/')) {
+                        // 以 / 开头但不是 /image/，假设是图片路径
+                        avatarUrl = cleanAvatar + '?t=' + Date.now();
+                    } else {
+                        // 相对路径（只是文件名），添加 /image/ 前缀
+                        avatarUrl = '/image/' + cleanAvatar + '?t=' + Date.now();
+                    }
+                }
+                console.log('Final avatarUrl:', avatarUrl);
+                
+                const userId = comment.userId || 0;
+                return `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <img src="${avatarUrl}" 
+                                 class="rounded-circle me-2"
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHJlY3QgZmlsbD0iI2RkZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIi8+PHRleHQgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGR5PSIyLjUiIGZvbnQtd2VpZ2h0PSJib2xkIiB4PSI1MCUiIHk9IjUwJSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+6L2s6L29PC90ZXh0Pjwvc3ZnPg==';" 
+                                 style="width: 30px; height: 30px; cursor: pointer;" 
+                                 alt="头像"
+                                 onclick="goToChat(${userId})"
+                                 title="Click to chat privately">
+                            <strong style="cursor: pointer;" onclick="goToChat(${userId})" title="Click to chat privately">${comment.userName || 'Unknown User'}</strong>
+                        </div>
+                        <p class="mb-0">${comment.comment || ''}</p>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function goToChat(userId) {
+            if (!userId || userId === 0 || userId === 'null') {
+                return;
+            }
+            // 跳转到Messages页面，并传递userId参数用于私聊
+            window.location.href = `/message?userId=${userId}`;
+        }
+
+        let currentPost = null; // Save当前Posts信息
+
+        async function likePost(postId) {
+            const token = getTokenOrRedirect();
+            if (!token) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('postID', postId.toString());
+                
+                // 根据当前状态决定是点赞还是Cancel点赞
+                const url = currentPost && currentPost.likeOrNot 
+                    ? '/post/dislikeThePost' 
+                    : '/post/likeThePost';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': token },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.data !== undefined ? result.data : result) {
+                        // 重新加载Posts以更新状态
+                        loadPost();
+                    } else {
+                        alert('Actions失败');
+                    }
+                } else {
+                    const error = await response.json();
+                    alert(error.msg || 'Actions失败');
+                }
+            } catch (error) {
+                console.error('Failed to like post:', error);
+                alert('Actions失败，请重试');
+            }
+        }
+
+        async function collectPost(postId) {
+            const token = getTokenOrRedirect();
+            if (!token) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('postID', postId.toString());
+                
+                // 根据当前状态决定是Collect还是CancelCollect
+                const url = currentPost && currentPost.collectOrNot 
+                    ? '/post/discollectThePost' 
+                    : '/post/collectThePost';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': token },
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Collect response:', result);
+                    // 检查响应格式：{code: 0, msg: "success", data: true/false}
+                    const success = result.data !== undefined ? result.data : result;
+                    if (success === true || success === 'true') {
+                        // 重新加载Posts以更新状态
+                        loadPost();
+                    } else {
+                        alert('Actions失败: ' + (result.msg || 'Unknown error'));
+                    }
+                } else {
+                    const error = await response.json();
+                    console.error('Collect error:', error);
+                    alert(error.msg || 'Actions失败');
+                }
+            } catch (error) {
+                console.error('Failed to collect post:', error);
+                alert('Actions失败，请重试');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadPost);
+    </script>
+</body>
+</html>
+

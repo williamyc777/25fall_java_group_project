@@ -1,0 +1,352 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > PostApp</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.app</a>
+</div>
+
+<h1>Coverage Summary for Class: PostApp (org.example.backend.app)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">PostApp</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    71.4%
+  </span>
+  <span class="absValue">
+    (10/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    45%
+  </span>
+  <span class="absValue">
+    (9/20)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    74.4%
+  </span>
+  <span class="absValue">
+    (67/90)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.app;
+&nbsp;
+&nbsp;import org.example.backend.config.MyException;
+&nbsp;import org.example.backend.domain.*;
+&nbsp;import org.example.backend.dto.EventDto;
+&nbsp;import org.example.backend.dto.PostDto;
+&nbsp;import org.example.backend.service.AbstractUserService;
+&nbsp;import org.example.backend.service.EventCommentService;
+&nbsp;import org.example.backend.service.EventService;
+&nbsp;import org.example.backend.service.PostService;
+&nbsp;import org.example.backend.util.JwtUtil;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;/**
+&nbsp; * 该类用于处理帖子相关的请求
+&nbsp; * @author Shinomiya
+&nbsp; * @version 1.0
+&nbsp; */
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/post&quot;)
+<b class="fc">&nbsp;public class PostApp {</b>
+&nbsp;    @Autowired
+&nbsp;    private PostService postService;
+&nbsp;    @Autowired
+&nbsp;    private AbstractUserService abstractUserService;
+&nbsp;    @Autowired
+&nbsp;    private EventService eventService;
+&nbsp;    @Autowired
+&nbsp;    private EventCommentService eventCommentService;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 发布帖子
+&nbsp;     * @param token 用户token
+&nbsp;     * @param postTitle 帖子标题
+&nbsp;     * @param postContent 帖子内容
+&nbsp;     * @param eventId 相关事件ID
+&nbsp;     * @return 帖子ID
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/releasePost&quot;)
+&nbsp;    public Long releasePost(@RequestHeader(&quot;Authorization&quot;) String token, @RequestParam(&quot;postTitle&quot;) String postTitle, @RequestParam(&quot;postContent&quot;) String postContent, @RequestParam(&quot;postRelevantEvent&quot;) String eventId) {
+&nbsp;//        long userId = JwtUtil.getIdByToken(token);
+<b class="fc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="fc">&nbsp;        Post post = new Post();</b>
+<b class="fc">&nbsp;        post.setPostTitle(postTitle);</b>
+<b class="fc">&nbsp;        post.setPostContent(postContent);</b>
+<b class="fc">&nbsp;        post.setUser(user);</b>
+<b class="fc">&nbsp;        post.setEvent(eventService.findEventById(Long.parseLong(eventId)));</b>
+<b class="fc">&nbsp;        postService.savePost(post);</b>
+<b class="fc">&nbsp;        return post.getId();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * 获取帖子
+&nbsp;     * @param postId 帖子ID
+&nbsp;     * @return 帖子信息
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/getFullPost&quot;)
+&nbsp;    public PostDto getFullPost(@RequestParam(&quot;postID&quot;) String postId) {
+<b class="fc">&nbsp;        Post post = postService.findPostById(Long.parseLong(postId));</b>
+<b class="fc">&nbsp;        PostDto postDto = constructPostDto(post);</b>
+<b class="fc">&nbsp;        postDto.setLikeOrNot(post.getLikeUsers().contains(post.getUser()));</b>
+<b class="fc">&nbsp;        postDto.setCollectOrNot(((User) post.getUser()).getFavouritePosts().contains(post));</b>
+<b class="fc">&nbsp;        return postDto;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private PostDto constructPostDto(Post post) {
+<b class="fc">&nbsp;        AbstractUser user = post.getUser();</b>
+<b class="fc">&nbsp;        PostDto postDto = new PostDto();</b>
+<b class="fc">&nbsp;        postDto.setPostID(post.getId());</b>
+<b class="fc">&nbsp;        postDto.setPostTitle(post.getPostTitle());</b>
+<b class="fc">&nbsp;        postDto.setPostContent(post.getPostContent());</b>
+<b class="fc">&nbsp;        postDto.setPostLink(String.valueOf(post.getId()));</b>
+<b class="fc">&nbsp;        postDto.setPostRelevantEventID(post.getEvent().getId());</b>
+<b class="fc">&nbsp;        postDto.setPostLikeAmount(post.getLikeUsers().size());</b>
+<b class="fc">&nbsp;        postDto.setPostCollectAmount(post.getPostCollectAmount());</b>
+<b class="fc">&nbsp;        postDto.setPostCommentAmount(eventCommentService.findEventCommentByPostId(post.getId()).size());</b>
+<b class="fc">&nbsp;        postDto.setUsername(user.getUsername());</b>
+<b class="fc">&nbsp;        postDto.setUserID(user.getId());</b>
+<b class="fc">&nbsp;        postDto.setUserBio(user.getBio());</b>
+<b class="fc">&nbsp;        postDto.setUserAvatar(user.getAvatar());</b>
+<b class="fc">&nbsp;        postDto.setLikeOrNot(post.getLikeUsers().contains(user));</b>
+<b class="fc">&nbsp;        postDto.setCollectOrNot(((User) user).getFavouritePosts().contains(post));</b>
+<b class="fc">&nbsp;        return postDto;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param token 用户token
+&nbsp;     * @param postId 帖子ID
+&nbsp;     * @return 点赞帖子是否成功
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/likeThePost&quot;)
+&nbsp;    public boolean likeThePost(@RequestHeader(&quot;Authorization&quot;) String token, @RequestParam(&quot;postID&quot;) String postId) {
+<b class="fc">&nbsp;        Post post = postService.findPostById(Long.parseLong(postId));</b>
+<b class="fc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="fc">&nbsp;        List&lt;AbstractUser&gt; likeUsers = post.getLikeUsers();</b>
+<b class="pc">&nbsp;        if (likeUsers.contains(user)) {</b>
+<b class="nc">&nbsp;            return true;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        likeUsers.add(user);</b>
+<b class="fc">&nbsp;        return postService.savePost(post);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param token 用户token
+&nbsp;     * @param postId 帖子ID
+&nbsp;     * @return 取消点赞帖子是否成功
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/dislikeThePost&quot;)
+&nbsp;    public boolean dislikeThePost(@RequestHeader(&quot;Authorization&quot;) String token, @RequestParam(&quot;postID&quot;) String postId) {
+<b class="fc">&nbsp;        Post post = postService.findPostById(Long.parseLong(postId));</b>
+<b class="fc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="fc">&nbsp;        List&lt;AbstractUser&gt; likeUsers = post.getLikeUsers();</b>
+<b class="pc">&nbsp;        if (!likeUsers.contains(user)) {</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        likeUsers.remove(user);</b>
+<b class="fc">&nbsp;        return postService.savePost(post);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param token 用户token
+&nbsp;     * @param postId 帖子ID
+&nbsp;     * @return 收藏帖子是否成功
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/collectThePost&quot;)
+&nbsp;    public boolean collectThePost(@RequestHeader(&quot;Authorization&quot;) String token, @RequestParam(&quot;postID&quot;) String postId) {
+<b class="fc">&nbsp;        Post post = postService.findPostById(Long.parseLong(postId));</b>
+<b class="fc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="pc">&nbsp;        if (!(user instanceof User)) {</b>
+<b class="nc">&nbsp;            throw new MyException(0, &quot;Only user can collect post&quot;);</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (((User) user).getFavouritePosts().contains(post)) {</b>
+<b class="nc">&nbsp;            return true;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        ((User) user).getFavouritePosts().add(post);</b>
+<b class="fc">&nbsp;        post.setPostCollectAmount(post.getPostCollectAmount() + 1);</b>
+<b class="fc">&nbsp;        return abstractUserService.saveUser(user);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param token 用户token
+&nbsp;     * @param postId 帖子ID
+&nbsp;     * @return 取消收藏帖子是否成功
+&nbsp;     */
+&nbsp;    @PostMapping(&quot;/discollectThePost&quot;)
+&nbsp;    public boolean discollectThePost(@RequestHeader(&quot;Authorization&quot;) String token, @RequestParam(&quot;postID&quot;) String postId) {
+<b class="fc">&nbsp;        Post post = postService.findPostById(Long.parseLong(postId));</b>
+<b class="fc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="pc">&nbsp;        if (!(user instanceof User)) {</b>
+<b class="nc">&nbsp;            throw new MyException(1, &quot;Only user can discollect post&quot;);</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (!((User) user).getFavouritePosts().contains(post)) {</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        ((User) user).getFavouritePosts().remove(post);</b>
+<b class="fc">&nbsp;        post.setPostCollectAmount(post.getPostCollectAmount() - 1);</b>
+<b class="fc">&nbsp;        return abstractUserService.saveUser(user);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @return 所有帖子
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/getPostSquare&quot;)
+&nbsp;    public List&lt;PostDto&gt; getPostSquare() {
+<b class="fc">&nbsp;        List&lt;Post&gt; posts = postService.findAllPosts();</b>
+<b class="fc">&nbsp;        List&lt;PostDto&gt; postDtos = new ArrayList&lt;&gt;();</b>
+<b class="fc">&nbsp;        for (Post post : posts) {</b>
+<b class="fc">&nbsp;            postDtos.add(constructPostDto(post));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return postDtos;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @return 所有事件
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/getAllEvent&quot;)
+&nbsp;    public List&lt;EventDto&gt; getAllEvent() {
+<b class="nc">&nbsp;        List&lt;EventDto&gt; eventDtos = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        List&lt;Event&gt; events = eventService.findAllEvents();</b>
+<b class="nc">&nbsp;        for (Event event : events) {</b>
+<b class="nc">&nbsp;            eventDtos.add(constructEventDto(event));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return eventDtos;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private EventDto constructEventDto(Event event) {
+<b class="nc">&nbsp;        EventDto eventDto = new EventDto();</b>
+<b class="nc">&nbsp;        eventDto.setId(event.getId());</b>
+<b class="nc">&nbsp;        eventDto.setEventName(event.getName());</b>
+<b class="nc">&nbsp;        return eventDto;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param postId 帖子ID
+&nbsp;     * @return 删除帖子是否成功
+&nbsp;     */
+&nbsp;    @DeleteMapping(&quot;/delete/{postID}&quot;)
+&nbsp;    public boolean deletePost(@PathVariable(&quot;postID&quot;) String postId) {
+<b class="nc">&nbsp;        return postService.deletePostById(Long.parseLong(postId));</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param token 用户token
+&nbsp;     * @return 用户收藏的帖子
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/getPostSquare/collect&quot;)
+&nbsp;    public List&lt;PostDto&gt; getPostSquareCollect(@RequestHeader(&quot;Authorization&quot;) String token) {
+<b class="fc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="fc">&nbsp;        List&lt;Post&gt; posts = ((User) user).getFavouritePosts();</b>
+<b class="fc">&nbsp;        List&lt;PostDto&gt; postDtos = new ArrayList&lt;&gt;();</b>
+<b class="pc">&nbsp;        for (Post post : posts) {</b>
+<b class="nc">&nbsp;            postDtos.add(constructPostDto(post));</b>
+&nbsp;        }
+<b class="fc">&nbsp;        return postDtos;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * @param token 用户token
+&nbsp;     * @return 用户发布的帖子
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/getPostSquare/write&quot;)
+&nbsp;    public List&lt;PostDto&gt; getPostSquareWrite(@RequestHeader(&quot;Authorization&quot;) String token) {
+<b class="nc">&nbsp;        AbstractUser user = JwtUtil.verifyToken(token);</b>
+<b class="nc">&nbsp;        List&lt;Post&gt; posts = postService.findPostsByUserId(user.getId());</b>
+<b class="nc">&nbsp;        List&lt;PostDto&gt; postDtos = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        for (Post post : posts) {</b>
+<b class="nc">&nbsp;            postDtos.add(constructPostDto(post));</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return postDtos;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>

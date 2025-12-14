@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Home - NYU Activity Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/main">NYU Activity Center</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/main">Events</a>
+                <a class="nav-link" href="/square">Posts</a>
+                <a class="nav-link" href="/message">Messages</a>
+                <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
+                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8">
+                <h2>Popular Events</h2>
+                <div class="row" id="eventList">
+                    <!-- Event list will be dynamically loaded via JavaScript -->
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Create Event</h5>
+                        <p class="text-muted">No events yet? Create a new event!</p>
+                        <a href="/event/create" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Create Event
+                        </a>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Search</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search events or posts">
+                            <button class="btn btn-outline-secondary" type="button" onclick="search()">Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:inline="javascript">
+        // 页面加载时禁用缓存
+        if ('performance' in window && 'navigation' in window.performance) {
+            if (window.performance.navigation.type === 1) {
+                // 页面是通过刷新或链接导航加载的，清除可能的缓存
+                console.log('Page loaded via navigation, ensuring fresh data');
+            }
+        }
+        
+        // Get token
+        function getToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'token') {
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        // Load event list - Use API consistently to ensure consistency
+        async function loadEvents() {
+            const eventList = document.getElementById('eventList');
+            if (!eventList) {
+                console.error('Event list element not found');
+                return;
+            }
+            
+            // Clear list
+            eventList.innerHTML = '';
+            
+            try {
+                // Use API consistently to get all event brief info, ensuring consistent display
+                // Add timestamp to prevent browser caching
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/event/brief/all?t=${timestamp}`, {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const events = result.data || result;
+                    console.log('loadEvents - Fetched events from API:', events);
+                    
+                    if (events && Array.isArray(events) && events.length > 0) {
+                        // Sort by ID again to ensure consistent display order (double check)
+                        const sortedEvents = [...events].sort((a, b) => {
+                            const idA = a.eventId || a.id || 0;
+                            const idB = b.eventId || b.id || 0;
+                            return idB - idA; // Descending order
+                        });
+                        
+                        console.log('loadEvents - Sorted events:', sortedEvents);
+                        
+                        // Clear first, then render all event cards at once
+                        eventList.innerHTML = '';
+                        sortedEvents.forEach(event => {
+                            if (event && (event.eventId || event.id)) {
+                                const eventCard = createEventCard(event);
+                                eventList.appendChild(eventCard);
+                            }
+                        });
+                        return;
+                    }
+                }
+                // If no events, show message
+                eventList.innerHTML = '<p class="text-muted">No events available</p>';
+            } catch (error) {
+                console.error('loadEvents - Failed to fetch events from API:', error);
+                eventList.innerHTML = '<p class="text-danger">Failed to load</p>';
+            }
+        }
+        
+
+        function createEventCard(event) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 mb-3';
+            // EventBriefDto 使用 eventId 和 eventName
+            const eventId = event.eventId || event.id;
+            const eventName = event.eventName || event.name || 'Event';
+            console.log('createEventCard - event:', event, 'eventId:', eventId, 'eventName:', eventName);
+            col.innerHTML = `
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">${eventName}</h5>
+                        <p class="card-text">${event.introduction || ''}</p>
+                        <a href="/event?id=${eventId}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            `;
+            return col;
+        }
+
+        function search() {
+            const input = document.getElementById('searchInput').value;
+            if (input.trim()) {
+                window.location.href = `/event/search?content=${encodeURIComponent(input)}`;
+            }
+        }
+
+        // Execute on page load - Use pageshow event uniformly to avoid duplicate loading
+        let isLoading = false;
+        let lastLoadTime = 0;
+        const LOAD_THROTTLE_MS = 500; // Don't reload within 500ms
+        
+        async function initEvents() {
+            const now = Date.now();
+            // Prevent duplicate loading: check if already loading or too soon since last load
+            if (isLoading || (now - lastLoadTime < LOAD_THROTTLE_MS)) {
+                console.log('Events already loading or too soon since last load, skipping...');
+                return;
+            }
+            
+            isLoading = true;
+            lastLoadTime = now;
+            const eventList = document.getElementById('eventList');
+            if (eventList) {
+                eventList.innerHTML = '';
+            }
+            
+            try {
+                await loadEvents();
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        // Only use pageshow event as it fires after DOMContentLoaded and handles all cases
+        window.addEventListener('pageshow', function(event) {
+            console.log('pageshow - event.persisted:', event.persisted, 'event.type:', event.type);
+            // Reload regardless of whether restored from cache
+            initEvents();
+        });
+        
+        // Also listen to DOMContentLoaded as fallback
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded - Will load events via pageshow');
+            // Delay a bit to ensure pageshow event can be handled first
+            setTimeout(() => {
+                if (!isLoading && Date.now() - lastLoadTime > LOAD_THROTTLE_MS) {
+                    initEvents();
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>
+

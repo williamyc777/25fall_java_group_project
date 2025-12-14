@@ -1,0 +1,100 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=GBK"> 
+  <title>Coverage Report > EventService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">org.example.backend.service</a>
+</div>
+
+<h1>Coverage Summary for Class: EventService (org.example.backend.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+</tr>
+<tr>
+  <td class="name">EventService</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package org.example.backend.service;
+&nbsp;
+&nbsp;import org.example.backend.domain.EnrollForm;
+&nbsp;import org.example.backend.domain.Event;
+&nbsp;
+&nbsp;import java.util.List;
+&nbsp;
+&nbsp;public interface EventService {
+&nbsp;    boolean saveEvent(Event event);
+&nbsp;
+&nbsp;    boolean deleteEventById(long id);
+&nbsp;
+&nbsp;    boolean updateEvent(Event event);
+&nbsp;
+&nbsp;    Event findEventById(long id);
+&nbsp;
+&nbsp;    List&lt;Event&gt; findAllEvents();
+&nbsp;
+&nbsp;    List&lt;Event&gt; findEventByAuthorId(long authorId);
+&nbsp;
+&nbsp;    boolean saveEnrollForm(EnrollForm enrollForm);
+&nbsp;
+&nbsp;    long getScore(long userId, long eventId);
+&nbsp;
+&nbsp;    boolean saveScore(long userId, long eventId, long score);
+&nbsp;
+&nbsp;    boolean deleteEvent(long eventId);
+&nbsp;
+&nbsp;    boolean appliedByUser(long userId, long eventId);
+&nbsp;
+&nbsp;    List&lt;Event&gt; searchEvent(String keyword);
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-06-03 14:18</div>
+</div>
+</body>
+</html>
