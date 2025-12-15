@@ -252,6 +252,22 @@ public class EventServiceImpl implements EventService {
             System.out.println("deleteEvent - Error removing scored relationships: " + e.getMessage());
         }
         
+        // 2.5. 删除 Score 表中的所有评分记录（必须先删除，因为有外键约束）
+        try {
+            List<Score> scoresToDelete = entityManager.createQuery(
+                "SELECT s FROM Score s WHERE s.eventId = :eventId", Score.class)
+                .setParameter("eventId", eventId)
+                .getResultList();
+            
+            if (!scoresToDelete.isEmpty()) {
+                scoreRepository.deleteAll(scoresToDelete);
+                System.out.println("deleteEvent - Deleted " + scoresToDelete.size() + " score records for event " + eventId);
+            }
+        } catch (Exception e) {
+            System.out.println("deleteEvent - Error deleting score records: " + e.getMessage());
+            // 继续删除，即使清理评分记录失败
+        }
+        
         // 3. 刷新以确保关联关系已删除
         entityManager.flush();
         entityManager.clear();
