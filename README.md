@@ -128,8 +128,13 @@ java -jar -Dspring-boot.run.profiles=dev target/backend-0.0.1-SNAPSHOT.jar
 ```
 - Windows (PowerShell):
 ```powershell
-java -jar -Dspring-boot.run.profiles=dev target\backend-0.0.1-SNAPSHOT.jar
+java -Dspring-boot.run.profiles=dev -jar target\backend-0.0.1-SNAPSHOT.jar
 ```
+
+> **Note for Windows**: The `-D` parameter must come **before** `-jar` in PowerShell. Alternatively, you can use:
+> ```powershell
+> $env:SPRING_PROFILES_ACTIVE="dev"; java -jar target\backend-0.0.1-SNAPSHOT.jar
+> ```
 
 ### Access (local)
 - Login: `http://localhost:8082/`
