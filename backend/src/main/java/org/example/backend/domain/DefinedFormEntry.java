@@ -1,6 +1,11 @@
 package org.example.backend.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import org.example.backend.dto.DefinedFormDto;
 
 import java.util.List;
@@ -14,7 +19,8 @@ public class DefinedFormEntry {
     private String name;
 
     private String type;
-    @ElementCollection
+    // 选项数量很少，直接使用 EAGER，避免懒加载在序列化时出错
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> options;
     private boolean required;
 

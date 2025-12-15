@@ -6,44 +6,123 @@
     <title>Messages - NYU Activity Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .message-container {
-            max-width: 800px;
+        body {
+            background-color: #f5f5f7;
+        }
+        .page-wrapper {
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 24px 16px 32px;
+        }
+        .message-layout {
+            display: flex;
+            gap: 16px;
+        }
+        .chat-list-panel,
+        .chat-panel {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.1);
+            padding: 16px 18px;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-list-panel {
+            width: 32%;
+        }
+        .chat-panel {
+            width: 68%;
         }
         .message-item {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: white;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: background 0.12s ease, transform 0.12s ease;
+        }
+        .message-item:hover {
+            background: #eef2ff;
+            transform: translateY(-1px);
         }
         .message-item.unread {
-            background: #e3f2fd;
-            border-color: #2196f3;
+            background: #e0f2fe;
+            border: 1px solid #38bdf8;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 6px;
+            margin-bottom: 12px;
+        }
+        .chat-bubble {
+            border-radius: 14px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            max-width: 80%;
+        }
+        .chat-bubble.me {
+            margin-left: auto;
+            background: #4f46e5;
+            color: #fff;
+        }
+        .chat-bubble.other {
+            background: #e5e7eb;
+        }
+        .chat-meta {
+            font-size: 0.75rem;
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/main">NYU Activity Center</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/main">Events</a>
-                <a class="nav-link" href="/square">Posts</a>
-                <a class="nav-link active" href="/message">Messages</a>
-                <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
-                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/main">NYU Activity Center</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#messageNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="messageNavbar">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    <a class="nav-link" href="/main">Events</a>
+                    <a class="nav-link" href="/square">Posts</a>
+                    <a class="nav-link active" href="/message">Messages</a>
+                    <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
+                    <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                    <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+                    <button class="btn btn-sm btn-outline-light ms-lg-2" type="button"
+                            onclick="logout()" th:if="${user}">
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="message-container">
-        <h2 class="mb-4">My Messages</h2>
-        <div id="messageList">
-            <div class="text-center">
-                <div class="spinner-border" role="status">
-                    <span class="visually-hidden">Loading...</span>
+    <div class="page-wrapper">
+        <h2 class="mb-3">Messages</h2>
+        <p class="text-muted mb-4">View your conversations or select a chat to start messaging.</p>
+
+        <div class="message-layout">
+            <!-- Left: chat list -->
+            <div class="chat-list-panel">
+                <h6 class="mb-3">Chats</h6>
+                <div id="chatListContainer">
+                    <div class="text-center py-4">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: chat detail / messages -->
+            <div class="chat-panel">
+                <div id="messageList" class="w-100 h-100 d-flex flex-column">
+                    <div class="text-center m-auto text-muted">
+                        Select a chat on the left to view messages.
+                    </div>
                 </div>
             </div>
         </div>
@@ -89,7 +168,7 @@
         }
 
         function renderChatList(chatList) {
-            const container = document.getElementById('messageList');
+            const container = document.getElementById('chatListContainer');
             if (chatList.length === 0) {
                 container.innerHTML = '<p class="text-center">No chats yet</p>';
                 return;
@@ -97,7 +176,7 @@
             container.innerHTML = chatList.map(chat => {
                 const chatData = typeof chat === 'string' ? JSON.parse(chat) : chat;
                 return `
-                    <div class="message-item ${chatData.hasUnread ? 'unread' : ''}" onclick="window.location.href='/message?userId=${chatData.userId}'" style="cursor: pointer;">
+                    <div class="message-item ${chatData.hasUnread ? 'unread' : ''}" onclick="window.location.href='/message?userId=${chatData.userId}'">
                         <h5>${chatData.userName || 'Unknown User'}</h5>
                         ${chatData.hasUnread ? '<span class="badge bg-danger">Unread</span>' : ''}
                     </div>
@@ -124,27 +203,34 @@
         function renderChatMessages(messages, friendId) {
             const container = document.getElementById('messageList');
             container.innerHTML = `
-                <div class="mb-3">
-                    <button class="btn btn-secondary" onclick="window.location.href='/message'">Back to Chat List</button>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.href='/message'">
+                        ← Back
+                    </button>
+                    <span class="text-muted small">Chat with User #${friendId}</span>
                 </div>
-                <div id="chatMessages">
+                <div id="chatMessages" class="chat-messages">
                     ${messages.map(msg => `
-                        <div class="message-item">
-                            <strong>${msg.fromName || 'Unknown User'}</strong>
-                            <p>${msg.content || ''}</p>
-                            <small class="text-muted">${formatTime(msg.time)}</small>
+                        <div class="d-flex ${msg.isSelf ? 'justify-content-end' : 'justify-content-start'}">
+                            <div class="chat-bubble ${msg.isSelf ? 'me' : 'other'}">
+                                <div class="fw-semibold mb-1">${msg.fromName || 'Unknown User'}</div>
+                                <div>${msg.content || ''}</div>
+                                <div class="chat-meta mt-1">${formatTime(msg.time)}</div>
+                            </div>
                         </div>
                     `).join('')}
                 </div>
-                <div class="mt-3">
+                <div class="mt-2">
                     <div class="input-group">
                         <input type="text" class="form-control" id="chatInput" placeholder="Enter message...">
                         <button class="btn btn-primary" onclick="sendChatMessage(${friendId})">Send</button>
                     </div>
                 </div>
             `;
-            // 滚动到底部
-            container.scrollTop = container.scrollHeight;
+            const messagesDiv = document.getElementById('chatMessages');
+            if (messagesDiv) {
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
         }
 
         async function sendChatMessage(friendId) {

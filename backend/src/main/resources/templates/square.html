@@ -6,31 +6,91 @@
     <title>Post Square - NYU Activity Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f5f5f7;
+        }
+        .page-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 16px 32px;
+        }
+        .hero-card {
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border-radius: 16px;
+            padding: 20px 24px;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+            margin-bottom: 24px;
+        }
+        .hero-card h1 {
+            font-size: 1.7rem;
+            margin-bottom: 6px;
+        }
+        .hero-card p {
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+        .square-header h2 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+        #postList .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        #postList .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/main">NYU Activity Center</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/main">Events</a>
-                <a class="nav-link active" href="/square">Posts</a>
-                <a class="nav-link" href="/message">Messages</a>
-                <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
-                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
-                <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/main">NYU Activity Center</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#squareNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="squareNavbar">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    <a class="nav-link" href="/main">Events</a>
+                    <a class="nav-link active" href="/square">Posts</a>
+                    <a class="nav-link" href="/message">Messages</a>
+                    <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
+                    <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                    <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+                    <button class="btn btn-sm btn-outline-light ms-lg-2" type="button"
+                            onclick="logout()" th:if="${user}">
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="row">
+    <div class="page-wrapper">
+        <div class="hero-card mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <h1>Post Square</h1>
+                    <p>Share your thoughts, discover discussions, and connect with other students.</p>
+                </div>
+                <button class="btn btn-light text-primary fw-semibold" onclick="writePost()">
+                    <i class="bi bi-pencil-square me-1"></i> New Post
+                </button>
+            </div>
+        </div>
+
+        <div class="row g-4">
             <div class="col-md-8">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2>Post Square</h2>
-                    <button class="btn btn-primary" onclick="writePost()">New Post</button>
+                <div class="d-flex justify-content-between align-items-center mb-3 square-header">
+                    <h2>Latest Posts</h2>
                 </div>
                 <div id="postList">
-                    <div class="text-center">
+                    <div class="text-center py-4">
                         <div class="spinner-border" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
@@ -38,14 +98,15 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card">
+                <div class="card shadow-sm border-0">
                     <div class="card-body">
-                        <h5 class="card-title">Filter</h5>
+                        <h5 class="card-title">Filter by Event</h5>
+                        <p class="text-muted small mb-2">Show posts linked to a specific event.</p>
                         <div class="mb-3">
                             <label class="form-label">Event ID</label>
                             <input type="number" class="form-control" id="eventFilter" th:value="${eventId}">
                         </div>
-                        <button class="btn btn-primary" onclick="filterPosts()">Filter</button>
+                        <button class="btn btn-primary w-100" onclick="filterPosts()">Apply Filter</button>
                     </div>
                 </div>
             </div>
@@ -53,7 +114,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+    <script src="/js/auth.js"></script>
+    <script th:inline="javascript">
         const eventId = /*[[${eventId}]]*/ null;
 
         function getToken() {
@@ -69,7 +131,8 @@
 
         async function loadPosts() {
             try {
-                const response = await fetch('/post/getPostSquare');
+                const url = eventId ? `/post/getPostSquare?eventId=${eventId}` : '/post/getPostSquare';
+                const response = await fetch(url);
                 console.log('loadPosts - Response status:', response.status);
                 if (response.ok) {
                     const result = await response.json();

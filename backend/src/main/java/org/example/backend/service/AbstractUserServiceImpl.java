@@ -67,11 +67,27 @@ public class AbstractUserServiceImpl implements AbstractUserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public AbstractUser findUserById(long id) {
         // 清除EntityManager缓存，确保获取最新数据
         entityManager.clear();
         // 使用EntityManager的find方法，绕过Repository缓存
         AbstractUser user = entityManager.find(AbstractUser.class, id);
+        if (user instanceof User u) {
+            // 触发需要用到的懒加载集合，避免在 Controller 层再触发 LazyInitializationException
+            if (u.getFavouriteEvents() != null) {
+                u.getFavouriteEvents().size();
+            }
+            if (u.getFavouritePosts() != null) {
+                u.getFavouritePosts().size();
+            }
+            if (u.getEnrollments() != null) {
+                u.getEnrollments().size();
+            }
+            if (u.getScoredEvents() != null) {
+                u.getScoredEvents().size();
+            }
+        }
         System.out.println("findUserById(" + id + ") - avatar: " + (user != null ? user.getAvatar() : "null"));
         return user;
     }

@@ -60,28 +60,19 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     /**
-     * 创建具有不同权限的用户组
+     * 创建具有不同角色的基础测试用户
+     * - 工作人员（Organizers）：可以创建活动 / 报名 / 评论
+     * - 参与者（Participants）：可以报名 / 评论，但不能创建活动
      */
     private void createUsersWithPermissions() {
-        // 用户组1: 可以创建活动、报名、评论
-        createUser("user1", "user1", "用户1", true, true, true);
-        
-        // 用户组2: 只能报名和评论
-        createUser("user2", "user2", "用户2", false, true, true);
-        
-        // 用户组3: 只能评论
-        createUser("user3", "user3", "用户3", false, false, true);
-        
-        // 用户组4: 无任何权限（受限用户）
-        createUser("user4", "user4", "用户4", false, false, false);
-        
-        // 创建更多测试用户
-        for (int i = 5; i <= 10; i++) {
-            boolean canCreate = (i % 2 == 1);
-            boolean canEnroll = (i % 3 != 0);
-            boolean canComment = true;
-            createUser("user" + i, "user" + i, "用户" + i, canCreate, canEnroll, canComment);
-        }
+        // 工作人员账号（可发布活动）
+        createUser("staff_alice", "staff_alice", "Alice (Staff)", true, true, true);
+        createUser("staff_bob", "staff_bob", "Bob (Staff)", true, true, true);
+
+        // 参与者账号（只能报名和评论）
+        createUser("participant_chris", "participant_chris", "Chris (Participant)", false, true, true);
+        createUser("participant_diana", "participant_diana", "Diana (Participant)", false, true, true);
+        createUser("participant_eli", "participant_eli", "Eli (Participant)", false, true, true);
     }
 
     /**

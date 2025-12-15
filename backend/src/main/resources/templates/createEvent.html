@@ -10,14 +10,23 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/main">NYU Activity Center</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/main">Events</a>
-                <a class="nav-link" href="/square">Posts</a>
-                <a class="nav-link" href="/message">Messages</a>
-                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
-                <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/main">NYU Activity Center</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#createNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="createNavbar">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    <a class="nav-link" href="/main">Events</a>
+                    <a class="nav-link" href="/square">Posts</a>
+                    <a class="nav-link" href="/message">Messages</a>
+                    <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                    <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+                    <button class="btn btn-sm btn-outline-light ms-lg-2" type="button"
+                            onclick="logout()" th:if="${user}">
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -40,6 +49,26 @@
                     <option value="form">Form Enrollment</option>
                 </select>
             </div>
+            <!-- Capacity enrollment settings -->
+            <div class="mb-3" id="limitCountDiv" style="display: none;">
+                <label class="form-label">Capacity Limit</label>
+                <input type="number" class="form-control" name="limitCount" min="1">
+            </div>
+
+            <!-- Form enrollment builder -->
+            <div class="mb-3" id="formBuilderDiv" style="display: none;">
+                <label class="form-label">Enrollment Form Fields</label>
+                <div class="border rounded p-3 bg-light">
+                    <p class="text-muted small mb-2">
+                        Configure the fields that participants need to fill in when applying for this event.
+                    </p>
+                    <div id="formFieldsContainer"></div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addFieldBtn">
+                        + Add Field
+                    </button>
+                </div>
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">Enrollment Start Time</label>
                 <input type="datetime-local" class="form-control" name="applyStartTime" required lang="en" step="1">
@@ -68,10 +97,6 @@
                 <label class="form-label">Event Details (Markdown)</label>
                 <textarea class="form-control" name="mdText" rows="10"></textarea>
             </div>
-            <div class="mb-3" id="limitCountDiv" style="display: none;">
-                <label class="form-label">Capacity Limit</label>
-                <input type="number" class="form-control" name="limitCount" min="1">
-            </div>
             <div class="mb-3">
                 <label class="form-label">Poster URL</label>
                 <input type="url" class="form-control" name="imageUrl">
@@ -81,11 +106,77 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/auth.js"></script>
     <script>
-        document.getElementById('enrollmentType').addEventListener('change', function() {
-            document.getElementById('limitCountDiv').style.display = 
-                this.value === 'count' ? 'block' : 'none';
-        });
+        const enrollmentTypeSelect = document.getElementById('enrollmentType');
+        const limitCountDiv = document.getElementById('limitCountDiv');
+        const formBuilderDiv = document.getElementById('formBuilderDiv');
+        const formFieldsContainer = document.getElementById('formFieldsContainer');
+        const addFieldBtn = document.getElementById('addFieldBtn');
+
+        function updateEnrollmentUI() {
+            const type = enrollmentTypeSelect.value;
+            if (type === 'count') {
+                limitCountDiv.style.display = 'block';
+                // count 模式下必须填写人数上限
+                const limitInput = limitCountDiv.querySelector('input[name="limitCount"]');
+                if (limitInput) {
+                    limitInput.required = true;
+                }
+                formBuilderDiv.style.display = 'none';
+            } else {
+                limitCountDiv.style.display = 'none';
+                const limitInput = limitCountDiv.querySelector('input[name="limitCount"]');
+                if (limitInput) {
+                    limitInput.required = false;
+                }
+                formBuilderDiv.style.display = 'block';
+                // 如果还没有字段，默认添加一个
+                if (formFieldsContainer.querySelectorAll('.form-field-row').length === 0) {
+                    addFormField('Contact information', 'input', true, '');
+                }
+            }
+        }
+
+        function addFormField(name = '', type = 'input', required = true, options = '') {
+            const row = document.createElement('div');
+            row.className = 'row g-2 align-items-end mb-2 form-field-row';
+            row.innerHTML = `
+                <div class="col-md-4">
+                    <label class="form-label small mb-1">Field Name</label>
+                    <input type="text" class="form-control form-field-name" value="${name}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Type</label>
+                    <select class="form-select form-field-type">
+                        <option value="input" ${type === 'input' ? 'selected' : ''}>Text</option>
+                        <option value="select" ${type === 'select' ? 'selected' : ''}>Select</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Options (for Select)</label>
+                    <input type="text" class="form-control form-field-options" placeholder="Option1, Option2" value="${options}">
+                </div>
+                <div class="col-md-2 text-end">
+                    <div class="form-check mb-1">
+                        <input class="form-check-input form-field-required" type="checkbox" ${required ? 'checked' : ''}>
+                        <label class="form-check-label small">Required</label>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger remove-field-btn">Remove</button>
+                </div>
+            `;
+            formFieldsContainer.appendChild(row);
+
+            row.querySelector('.remove-field-btn').addEventListener('click', () => {
+                row.remove();
+            });
+        }
+
+        enrollmentTypeSelect.addEventListener('change', updateEnrollmentUI);
+        addFieldBtn.addEventListener('click', () => addFormField());
+
+        // 初始化一次
+        updateEnrollmentUI();
 
         document.getElementById('createEventForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -108,6 +199,46 @@
             data.applyEndTime = formatDateTime(data.applyEndTime);
             data.startTime = formatDateTime(data.startTime);
             data.endTime = formatDateTime(data.endTime);
+
+            // 构造表单报名字段
+            if (data.enrollmentType === 'form') {
+                const rows = formFieldsContainer.querySelectorAll('.form-field-row');
+                const definedForm = [];
+                rows.forEach(row => {
+                    const nameInput = row.querySelector('.form-field-name');
+                    const typeSelect = row.querySelector('.form-field-type');
+                    const requiredCheckbox = row.querySelector('.form-field-required');
+                    const optionsInput = row.querySelector('.form-field-options');
+
+                    const fieldName = nameInput.value.trim();
+                    if (!fieldName) {
+                        return;
+                    }
+
+                    const rawOptions = optionsInput.value.trim();
+                    const options = rawOptions
+                        ? rawOptions.split(',').map(o => o.trim()).filter(o => o.length > 0)
+                        : [];
+
+                    definedForm.push({
+                        id: 0,
+                        name: fieldName,
+                        type: typeSelect.value,        // 'input' or 'select'
+                        required: !!requiredCheckbox.checked,
+                        options: options
+                    });
+                });
+
+                if (definedForm.length === 0) {
+                    alert('Please add at least one form field for form enrollment.');
+                    return;
+                }
+
+                data.definedForm = definedForm;
+            } else {
+                // count 类型保持结构一致，传空数组
+                data.definedForm = [];
+            }
 
             try {
                 console.log('Creating event with data:', data);

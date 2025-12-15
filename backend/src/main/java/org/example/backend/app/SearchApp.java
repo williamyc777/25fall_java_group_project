@@ -2,6 +2,7 @@ package org.example.backend.app;
 
 import org.example.backend.domain.Event;
 import org.example.backend.domain.Post;
+import org.example.backend.dto.EventBriefDto;
 import org.example.backend.service.EventService;
 import org.example.backend.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +28,20 @@ public class SearchApp {
 
     /**
      * @param content 搜索内容
-     * @return 模糊搜索到的相关活动
+     * @return 模糊搜索到的相关活动ID
      */
     @GetMapping("/event")
     public List<Long> searchEvent(@RequestParam String content) {
         return eventService.searchEvent(content).stream().map(Event::getId).toList();
+    }
+
+    /**
+     * @param content 搜索内容
+     * @return 模糊搜索到的相关活动简要信息
+     */
+    @GetMapping("/event/brief")
+    public List<EventBriefDto> searchEventBrief(@RequestParam String content) {
+        return eventService.searchEvent(content).stream().map(EventBriefDto::new).toList();
     }
 
     /**

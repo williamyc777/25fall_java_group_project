@@ -61,48 +61,95 @@
         .liked-btn.liked i {
             color: #f44336;
         }
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .markdown-body p {
+            margin-bottom: 0.75rem;
+        }
+        .markdown-body ul,
+        .markdown-body ol {
+            padding-left: 1.25rem;
+        }
+        .event-meta {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .event-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-right: 16px;
+            margin-bottom: 8px;
+        }
+        .event-meta-item i {
+            font-size: 1rem;
+            color: #0d6efd;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/main">NYU Activity Center</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/main">Events</a>
-                <a class="nav-link" href="/square">Posts</a>
-                <a class="nav-link" href="/message">Messages</a>
-                <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
-                <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
-                <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/main">NYU Activity Center</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#eventNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="eventNavbar">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    <a class="nav-link" href="/main">Events</a>
+                    <a class="nav-link" href="/square">Posts</a>
+                    <a class="nav-link" href="/message">Messages</a>
+                    <a class="nav-link" th:if="${isAdmin}" href="/admin">Admin</a>
+                    <a class="nav-link" th:if="${user}" th:href="@{/profile(userID=${user.id})}">Profile</a>
+                    <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+                    <button class="btn btn-sm btn-outline-light ms-lg-2" type="button"
+                            onclick="logout()" th:if="${user}">
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
     <div class="event-container">
-        <div class="row">
-            <div class="col-md-8">
-                <div id="eventContent">
-                    <div class="text-center">
-                        <div class="spinner-border" role="status">
-                            <span class="visually-hidden">Loading...</span>
+        <div class="row g-4">
+            <!-- Main content -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body" id="eventContent">
+                        <div class="text-center py-5">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="text-muted mt-3 mb-0">Loading event details...</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="sidebar">
-                    <h5>Related Posts</h5>
-                    <div id="postList">
-                        <!-- Post list will be loaded via JavaScript -->
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="sidebar card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">Related Posts</h5>
+                        <div id="postList" class="small text-muted">
+                            <!-- Post list will be loaded via JavaScript -->
+                        </div>
                     </div>
                 </div>
                 <!-- 当没有EventsID时，显示Create Event选项 -->
-                <div class="sidebar mt-3" id="createEventSection" style="display: none;">
-                    <h5>Create Event</h5>
-                    <p class="text-muted">No events yet? Create a new event!</p>
-                    <a href="/event/create" class="btn btn-primary w-100">
-                        <i class="bi bi-plus-circle"></i> Create Event
-                    </a>
+                <div class="sidebar card border-0 shadow-sm" id="createEventSection" style="display: none;">
+                    <div class="card-body">
+                        <h5 class="card-title">Create Event</h5>
+                        <p class="text-muted mb-3">No events yet? Create a new event!</p>
+                        <a href="/event/create" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Create Event
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,17 +158,24 @@
     <!-- Bottom action bar, only show when event ID exists -->
     <div class="bottom-actions" id="bottomActions" style="display: none;">
         <div class="container-fluid">
-            <div class="d-flex justify-content-end align-items-center gap-3">
-                <button id="likeBtn" class="liked-btn" onclick="toggleLike()">
-                    <i class="bi bi-heart"></i> <span id="likeText">Collect</span>
-                </button>
-                <button id="applyBtn" class="btn btn-primary" onclick="applyEvent()">I want to participate</button>
-                <div class="star-rating" id="rating">
-                    <span class="star" data-rating="5" onclick="rate(5)">★</span>
-                    <span class="star" data-rating="4" onclick="rate(4)">★</span>
-                    <span class="star" data-rating="3" onclick="rate(3)">★</span>
-                    <span class="star" data-rating="2" onclick="rate(2)">★</span>
-                    <span class="star" data-rating="1" onclick="rate(1)">★</span>
+            <div class="d-flex justify-content-between align-items-center gap-3">
+                <div>
+                    <button id="editEventBtn" class="btn btn-outline-secondary btn-sm" style="display: none;" onclick="goToEditEvent()">
+                        <i class="bi bi-pencil-square"></i> Edit Event
+                    </button>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <button id="likeBtn" class="liked-btn" onclick="toggleLike()">
+                        <i class="bi bi-heart"></i> <span id="likeText">Collect</span>
+                    </button>
+                    <button id="applyBtn" class="btn btn-primary" onclick="applyEvent()">I want to participate</button>
+                    <div class="star-rating" id="rating">
+                        <span class="star" data-rating="5" onclick="rate(5)">★</span>
+                        <span class="star" data-rating="4" onclick="rate(4)">★</span>
+                        <span class="star" data-rating="3" onclick="rate(3)">★</span>
+                        <span class="star" data-rating="2" onclick="rate(2)">★</span>
+                        <span class="star" data-rating="1" onclick="rate(1)">★</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -147,6 +201,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/js/auth.js"></script>
     <script th:inline="javascript">
         // Get eventId from Thymeleaf template, if null get from URL params
         let eventId = /*[[${eventId}]]*/ null;
@@ -165,6 +221,7 @@
         let currentEvent = null;
         let isLiked = false;
         let currentRating = 0;
+        const isEventAuthorFromServer = /*[[${isEventAuthor}]]*/ false;
 
         function getToken() {
             const cookies = document.cookie.split(';');
@@ -245,34 +302,15 @@
 
         async function renderEvent(event) {
             const stars = '⭐'.repeat(Math.floor(event.score || 0));
+            // 将存储的 Markdown 文本渲染为 HTML，兼容不同字段名
+            const rawMarkdown = event.text || event.mdText || event.introduction || '';
+            const markdownHtml = rawMarkdown ? marked.parse(rawMarkdown) : null;
             
             // Update apply button state
             updateApplyButton(event.applied || false);
             
-            // Get current user info from API, check if is event creator
-            let isEventAuthor = false;
-            const token = getToken();
-            if (token && eventId) {
-                try {
-                    // Check authorId through event detail API
-                    const authorId = event.authorId;
-                    if (authorId) {
-                        // Get current user info
-                        const userResponse = await fetch('/userInfo', {
-                            headers: { 'Authorization': token }
-                        });
-                        if (userResponse.ok) {
-                            const userResult = await userResponse.json();
-                            const currentUser = userResult.data || userResult;
-                            if (currentUser && currentUser.id == authorId) {
-                                isEventAuthor = true;
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to check if user is event author:', error);
-                }
-            }
+            // 使用后端传入的 isEventAuthor 标志控制导出和编辑按钮
+            const isEventAuthor = isEventAuthorFromServer === true;
             
             let exportButton = '';
             if (isEventAuthor) {
@@ -281,14 +319,36 @@
             
             const content = `
                 ${exportButton}
-                <h1>${event.title || ''}</h1>
-                <p class="text-primary">${event.eventName || event.name || ''}</p>
-                <p><small>Enrollment Time: ${formatTime(event.applyStartTime)} - ${formatTime(event.applyEndTime)}</small></p>
-                <p><small>Event Time: ${formatTime(event.startTime)} - ${formatTime(event.endTime)}</small></p>
-                <p>${stars}</p>
+                <h1 class="mb-2">${event.title || ''}</h1>
+                <p class="text-primary fs-5 mb-3">${event.eventName || event.name || ''}</p>
+
+                <div class="d-flex flex-wrap event-meta mb-1">
+                    <div class="event-meta-item">
+                        <i class="bi bi-calendar-event"></i>
+                        <span><strong>Enrollment:</strong> ${formatTime(event.applyStartTime)} - ${formatTime(event.applyEndTime)}</span>
+                    </div>
+                    <div class="event-meta-item">
+                        <i class="bi bi-clock"></i>
+                        <span><strong>Event:</strong> ${formatTime(event.startTime)} - ${formatTime(event.endTime)}</span>
+                    </div>
+                </div>
+
+                <p class="event-meta mb-3"><strong>Event ID:</strong> ${eventId}</p>
+
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        <span class="fw-semibold me-2">Rating:</span>
+                        <span>${stars || 'No rating yet'}</span>
+                    </div>
+                </div>
+
                 ${event.postUrl ? `<img src="${event.postUrl}" class="event-poster" alt="Event Poster">` : ''}
                 <div class="event-content">
-                    ${event.text ? `<div>${event.text}</div>` : ''}
+                    ${
+                        markdownHtml
+                            ? `<div class="markdown-body">${markdownHtml}</div>`
+                            : '<p class="text-muted">No detailed description.</p>'
+                    }
                 </div>
             `;
             document.getElementById('eventContent').innerHTML = content;
@@ -301,6 +361,17 @@
             
             currentRating = Math.floor(event.score || 0);
             updateRating();
+
+            // 根据作者身份显示/隐藏编辑按钮
+            const editBtn = document.getElementById('editEventBtn');
+            if (editBtn) {
+                editBtn.style.display = isEventAuthor ? 'inline-block' : 'none';
+            }
+        }
+
+        function goToEditEvent() {
+            if (!eventId) return;
+            window.location.href = '/event/edit?id=' + eventId;
         }
 
         function formatTime(timeStr) {
@@ -469,24 +540,48 @@
                 method: 'POST',
                 headers: { 'Authorization': token },
                 body: formData
-            }).then(response => {
+            }).then(async response => {
+                const text = await response.text();
+                console.log('applyEvent - response status:', response.status, 'text:', text);
+
                 if (response.ok) {
-                    alert('Enrollment successful！');
-                    bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide();
-                    // 强制重新加载Event Details，清除可能的缓存
-                    isLoadingEvent = false;
-                    // Add timestamp to prevent caching
-                    const timestamp = new Date().getTime();
-                    loadEvent();
-                } else {
-                    response.text().then(text => {
-                        try {
-                            const error = JSON.parse(text);
-                            alert('Enrollment failed: ' + (error.msg || error.message || 'Unknown error'));
-                        } catch (e) {
+                    // 业务上仍可能失败，需要检查返回体
+                    try {
+                        const result = JSON.parse(text);
+                        const success =
+                            result === true ||
+                            result.data === true ||
+                            result.code === 0;
+
+                        if (success) {
+                            alert('Enrollment successful!');
+                            bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide();
+                            // 强制重新加载Event Details，清除可能的缓存
+                            isLoadingEvent = false;
+                            const timestamp = new Date().getTime();
+                            loadEvent();
+                        } else {
+                            alert('Enrollment failed: ' + (result.msg || result.message || 'Unknown error'));
+                        }
+                    } catch (e) {
+                        // 返回的是纯布尔值
+                        if (text === 'true') {
+                            alert('Enrollment successful!');
+                            bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide();
+                            isLoadingEvent = false;
+                            const timestamp = new Date().getTime();
+                            loadEvent();
+                        } else {
                             alert('Enrollment failed: ' + text);
                         }
-                    });
+                    }
+                } else {
+                    try {
+                        const error = JSON.parse(text);
+                        alert('Enrollment failed: ' + (error.msg || error.message || 'Unknown error'));
+                    } catch (e) {
+                        alert('Enrollment failed: HTTP ' + response.status);
+                    }
                 }
             }).catch(error => {
                 console.error('Failed to apply:', error);

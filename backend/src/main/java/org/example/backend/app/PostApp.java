@@ -379,12 +379,23 @@ public class PostApp {
     }
 
     /**
-     * @return 所有帖子
+     * 帖子广场列表
+     * @param eventId 可选的活动ID，如果提供则只返回与该活动关联的帖子
+     * @return 帖子列表
      */
     @GetMapping("/getPostSquare")
-    public List<PostDto> getPostSquare() {
+    public List<PostDto> getPostSquare(@RequestParam(value = "eventId", required = false) Long eventId) {
         List<Post> posts = postService.findAllPosts();
-        System.out.println("getPostSquare - Found " + posts.size() + " posts");
+        System.out.println("getPostSquare - Found " + posts.size() + " posts (before filter)");
+
+        // 如果指定了 eventId，则只保留关联到该活动的帖子
+        if (eventId != null) {
+            posts = posts.stream()
+                    .filter(p -> p != null && p.getEvent() != null && p.getEvent().getId() == eventId)
+                    .toList();
+            System.out.println("getPostSquare - Filtered by eventId=" + eventId + ", remaining posts: " + posts.size());
+        }
+
         List<PostDto> postDtos = new ArrayList<>();
         for (Post post : posts) {
             PostDto dto = constructPostDto(post);

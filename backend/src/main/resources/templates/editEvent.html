@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Event - NYU Activity Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand fw-semibold" href="/main">NYU Activity Center</a>
+    </div>
+</nav>
+
+<div class="container my-4">
+    <h2 class="mb-3">Edit Event</h2>
+    <p class="text-muted">Event ID: <span id="eventIdText"></span></p>
+
+    <form id="editEventForm" class="card p-3">
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <input type="text" class="form-control" id="title" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" id="name" required>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Apply Start Time</label>
+                <input type="datetime-local" class="form-control" id="applyStartTime">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Apply End Time</label>
+                <input type="datetime-local" class="form-control" id="applyEndTime">
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Start Time</label>
+                <input type="datetime-local" class="form-control" id="startTime">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">End Time</label>
+                <input type="datetime-local" class="form-control" id="endTime">
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Image URL</label>
+            <input type="text" class="form-control" id="imageUrl">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Introduction</label>
+            <textarea class="form-control" id="introduction" rows="3"></textarea>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Markdown Text</label>
+            <textarea class="form-control" id="mdText" rows="6"></textarea>
+        </div>
+
+        <div class="alert alert-info">
+            Enrollment type and capacity / form structure cannot be edited here.
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+            <button type="button" class="btn btn-primary" onclick="submitEdit()">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+    let eventId = null;
+
+    function getToken() {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'token') {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    function toDatetimeLocal(value) {
+        if (!value) return '';
+        // 后端可能返回 "yyyy-MM-dd HH:mm:ss" 或 "yyyy-MM-ddTHH:mm:ss"
+        let v = value.replace(' ', 'T');
+        // 只保留到分钟，满足 datetime-local 默认格式 yyyy-MM-ddTHH:mm
+        if (v.length >= 16) {
+            return v.substring(0, 16);
+        }
+        return v;
+    }
+
+    function formatDateTime(dateTimeStr) {
+        // 将 datetime-local 格式转换为 yyyy-MM-dd HH:mm:ss（与创建活动保持一致）
+        if (!dateTimeStr) return '';
+        let formatted = dateTimeStr.replace('T', ' ');
+        const timePattern = /(\d{2}:\d{2})(:\d{2})?$/;
+        const match = formatted.match(timePattern);
+        if (match) {
+            if (match[2]) {
+                return formatted;
+            } else {
+                return formatted + ':00';
+            }
+        }
+        return formatted + ':00';
+    }
+
+    async function loadEventForEdit() {
+        const params = new URLSearchParams(window.location.search);
+        eventId = params.get('id');
+        if (!eventId) {
+            alert('Missing event id');
+            window.location.href = '/main';
+            return;
+        }
+        document.getElementById('eventIdText').innerText = eventId;
+
+        const token = getToken();
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/';
+            return;
+        }
+
+        try {
+            const resp = await fetch('/event/detail?id=' + eventId, {
+                headers: { 'Authorization': token }
+            });
+            if (!resp.ok) {
+                alert('Failed to load event');
+                return;
+            }
+            const result = await resp.json();
+            const e = result.data || result;
+            document.getElementById('title').value = e.title || '';
+            document.getElementById('name').value = e.eventName || e.name || '';
+            document.getElementById('applyStartTime').value = toDatetimeLocal(e.applyStartTime);
+            document.getElementById('applyEndTime').value = toDatetimeLocal(e.applyEndTime);
+            document.getElementById('startTime').value = toDatetimeLocal(e.startTime);
+            document.getElementById('endTime').value = toDatetimeLocal(e.endTime);
+            document.getElementById('imageUrl').value = e.postUrl || e.imageUrl || '';
+            document.getElementById('introduction').value = e.introduction || '';
+            document.getElementById('mdText').value = e.text || e.mdText || '';
+        } catch (e) {
+            console.error(e);
+            alert('Failed to load event: ' + e.message);
+        }
+    }
+
+    async function submitEdit() {
+        const token = getToken();
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/';
+            return;
+        }
+        const payload = {
+            id: Number(eventId), // 后端用来校验，页面上不允许改
+            title: document.getElementById('title').value,
+            name: document.getElementById('name').value,
+            applyStartTime: formatDateTime(document.getElementById('applyStartTime').value),
+            applyEndTime: formatDateTime(document.getElementById('applyEndTime').value),
+            startTime: formatDateTime(document.getElementById('startTime').value),
+            endTime: formatDateTime(document.getElementById('endTime').value),
+            imageUrl: document.getElementById('imageUrl').value,
+            introduction: document.getElementById('introduction').value,
+            mdText: document.getElementById('mdText').value
+        };
+
+        try {
+            const resp = await fetch('/event/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': token
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!resp.ok) {
+                const text = await resp.text();
+                alert('Failed to save: ' + text);
+                return;
+            }
+            alert('Saved successfully');
+            window.location.href = '/event?id=' + eventId;
+        } catch (e) {
+            console.error(e);
+            alert('Failed to save: ' + e.message);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadEventForEdit);
+</script>
+</body>
+</html>
+
+

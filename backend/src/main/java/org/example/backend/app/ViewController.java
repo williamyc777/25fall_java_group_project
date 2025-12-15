@@ -140,6 +140,33 @@ public class ViewController {
     }
 
     /**
+     * 编辑活动页面
+     */
+    @GetMapping("/event/edit")
+    public String editEvent(@RequestParam Long id, Model model, HttpServletRequest request) {
+        String token = getTokenFromRequest(request);
+        if (token == null) {
+            return "redirect:/";
+        }
+        try {
+            AbstractUser user = JwtUtil.verifyToken(token);
+            if (user == null) {
+                return "redirect:/";
+            }
+            Event event = eventService.findEventById(id);
+            if (event == null || event.getAuthor() == null || event.getAuthor().getId() != user.getId()) {
+                // 不是作者，禁止编辑
+                return "redirect:/event?id=" + id;
+            }
+            model.addAttribute("user", user);
+            model.addAttribute("eventId", id);
+        } catch (Exception e) {
+            return "redirect:/";
+        }
+        return "editEvent";
+    }
+
+    /**
      * 管理活动页面
      */
     @GetMapping("/event/manage")

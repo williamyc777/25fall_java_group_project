@@ -11,10 +11,10 @@ public class User extends AbstractUser {
     @OneToOne(mappedBy = "user")
     @Cascade(org.hibernate.annotations.CascadeType.ALL)
     private Permission permission;
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     private List<Event> favouriteEvents;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     private List<Post> favouritePosts;
 
     @OneToMany(mappedBy = "user")

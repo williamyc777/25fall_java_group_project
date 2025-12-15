@@ -22,7 +22,8 @@ import java.util.UUID;
 @ActiveProfiles("dev")
 @AutoConfigureMockMvc
 @org.springframework.test.context.TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:file:./h2db/testdb;DB_CLOSE_ON_EXIT=FALSE",
+        // Use in-memory H2 for tests to avoid file locking
+        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.main.allow-bean-definition-overriding=true",
@@ -127,6 +128,40 @@ class BackendApplicationTests {
         String token = loginJson.has("data") ? loginJson.get("data").asText() : "";
         AbstractUser user = JwtUtil.verifyToken(token);
         assert user != null && uname.equals(user.getUsername());
+    }
+
+    /** Duplicate signup should be rejected with code=5 */
+    @Test
+    void duplicateSignUp_shouldFail() throws Exception {
+        String uname = "dup" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+        String pwd = "p" + UUID.randomUUID().toString().replace("-", "").substring(0, 6);
+
+        // first signup succeeds
+        mockMvc.perform(
+                        MockMvcRequestBuilders.post("/signUp")
+                                .param("username", uname)
+                                .param("password", pwd))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+
+        // second signup should return code=5 (username already exists)
+        String resp = mockMvc.perform(
+                        MockMvcRequestBuilders.post("/signUp")
+                                .param("username", uname)
+                                .param("password", pwd))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        JsonNode json = mapper.readTree(resp);
+        assert json.has("code") && json.get("code").asInt() == 5;
+    }
+
+    /** Event brief list endpoint should be reachable */
+    @Test
+    void eventBrief_shouldReturn200() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/event/brief/all"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
     }
 }
 

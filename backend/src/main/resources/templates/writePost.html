@@ -5,20 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Post - NYU Activity Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f7;
+        }
+        .page-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px 16px 32px;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/main">NYU Activity Center</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/square">Back to Post Square</a>
+        <div class="container">
+            <a class="navbar-brand fw-semibold" href="/main">NYU Activity Center</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#writeNavbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="writeNavbar">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+                    <a class="nav-link" href="/main">Events</a>
+                    <a class="nav-link" href="/square">Posts</a>
+                    <a class="nav-link" href="/message">Messages</a>
+                    <a class="nav-link" href="/square">Back to Post Square</a>
+                    <a class="nav-link" th:if="${user == null}" href="/">Login</a>
+                    <button class="btn btn-sm btn-outline-light ms-lg-2" type="button"
+                            onclick="logout()" th:if="${user}">
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <div class="page-wrapper">
         <h2>Create New Post</h2>
-        <form id="writePostForm" class="mt-4">
+        <form id="writePostForm" class="mt-3">
             <div class="mb-3">
                 <label class="form-label">Post Title</label>
                 <input type="text" class="form-control" id="postTitle" name="postTitle" required>

@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventPostDto {
+    private Long id; // 用于更新时传递 eventId，创建时可以为 null
     private String title;
     private String name;
     private String enrollmentType;
@@ -31,6 +32,7 @@ public class EventPostDto {
     private List<DefinedFormDto> definedForm;
 
     public EventPostDto(Event event) {
+        this.id = event.getId();
         this.title = event.getTitle();
         this.name = event.getName();
         this.applyStartTime = event.getAbstractEnrollment().getStartTime().toString().replace("T", " ");

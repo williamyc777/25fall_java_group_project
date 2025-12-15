@@ -152,18 +152,31 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public long getScore(long userId, long eventId) {
-        Score score = scoreRepository.findScoreByUserIdAndEventId(userId, eventId);
-        if (score == null) {
+        // 允许存在多条记录，这里取最新的一条（id 最大）
+        List<Score> scores = scoreRepository.findAllByUserIdAndEventId(userId, eventId);
+        if (scores == null || scores.isEmpty()) {
             return 0;
         }
-        return score.getScore();
+        Score latest = scores.stream()
+                .max(java.util.Comparator.comparingLong(Score::getId))
+                .orElse(scores.get(0));
+        return latest.getScore();
     }
 
     @Override
     public boolean saveScore(long userId, long eventId, long score) {
-        Score scoreObj = new Score();
-        scoreObj.setUserId(userId);
-        scoreObj.setEventId(eventId);
+        // 如果已存在记录，则更新最新那条；否则新建
+        List<Score> scores = scoreRepository.findAllByUserIdAndEventId(userId, eventId);
+        Score scoreObj;
+        if (scores == null || scores.isEmpty()) {
+            scoreObj = new Score();
+            scoreObj.setUserId(userId);
+            scoreObj.setEventId(eventId);
+        } else {
+            scoreObj = scores.stream()
+                    .max(java.util.Comparator.comparingLong(Score::getId))
+                    .orElse(scores.get(0));
+        }
         scoreObj.setScore(score);
         scoreRepository.save(scoreObj);
         return true;

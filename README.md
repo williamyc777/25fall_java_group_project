@@ -1,56 +1,56 @@
 # NYU Activity Center (Spring Boot + Thymeleaf)
 
-校园活动与社交平台，提供活动发布/报名、帖子互动、私信聊天、管理员后台等功能。基于 Spring Boot + Thymeleaf SSR，持久化使用 H2（dev）或 MySQL（prod）。
+Campus events and social platform with event creation/enrollment, posts, private chat, and admin panel. Built with Spring Boot + Thymeleaf SSR, persisted with H2 (dev) or MySQL (prod).
 
-## 技术栈与高级特性
-- **Spring Boot / MVC / Thymeleaf**：服务器端渲染模板，传统 MVC 架构。
-- **Maven**：依赖与构建管理，profiles 支持（dev: H2 文件库；prod: MySQL）。
-- **JPA / Hibernate + HikariCP**：实体关系映射、事务与缓存控制、JOIN FETCH 优化。
-- **Security / Network**：JWT 鉴权、基于角色/权限的访问控制（Admin / User，canCreate/canEnroll/canComment），自定义拦截器。
-- **WebSocket**：私信聊天实时通信。
-- **Multithreading**：Tomcat 线程池处理并发请求；事务保障并发一致性（报名、点赞、收藏等）。
-- **Testing**：JUnit5 + Spring Boot Test + MockMvc 的集成测试样例。
-- **其他**：Apache POI 导出报名表、DTO 模式、全局异常包装。
+## Tech Stack & Highlights
+- **Spring Boot / MVC / Thymeleaf**: server-side rendering, classic MVC.
+- **Maven**: dependency/build management, profiles (dev: H2 file DB; prod: MySQL).
+- **JPA / Hibernate + HikariCP**: ORM, transactions, cache control, JOIN FETCH optimizations.
+- **Security / Network**: JWT auth, role/permission checks (Admin/User; canCreate/canEnroll/canComment), custom interceptors.
+- **WebSocket**: real-time private messaging.
+- **Multithreading**: Tomcat thread pool; transactional consistency for enroll/like/collect flows.
+- **Testing**: JUnit5 + Spring Boot Test + MockMvc smoke tests.
+- **Other**: Apache POI export, DTO pattern, global exception wrapping.
 
-## 功能概览
-- 活动：创建（容量/表单两种报名）、报名、评分、导出报名清单（Excel）。
-- 帖子：发布、点赞、收藏、评论。
-- 个人中心：资料/头像修改，“我的活动/帖子”列表。
-- 消息：用户头像点击私信，WebSocket 实时聊天。
-- 管理员：用户权限编辑、活动/帖子管理与删除。
+## Feature Overview
+- Events: create (capacity/form enrollment), enroll, rate, export enrollment list (Excel).
+- Posts: publish, like, collect, comment.
+- Profile: edit info/avatar; view “My Events/Posts”.
+- Messaging: click avatar to DM, WebSocket chat.
+- Admin: edit permissions, manage/delete events and posts.
 
-## 运行方式
-1) 构建
+## Quick Run
+1) Build
 ```bash
 cd backend
 mvn clean package -DskipTests
 ```
-2) 启动（推荐 dev，使用 H2 文件库）
+2) Start (dev, H2 file DB)
 ```bash
 java -jar -Dspring-boot.run.profiles=dev target/backend-0.0.1-SNAPSHOT.jar
 ```
-3) 访问
-- 前台入口：`http://localhost:8082/main`
-- H2 控制台：`http://localhost:8082/h2-console` （JDBC URL: `jdbc:h2:file:./h2db/testdb`，用户 `sa`）
+3) Access
+- Main: `http://localhost:8082/main`
+- H2 console: `http://localhost:8082/h2-console` (JDBC URL: `jdbc:h2:file:./h2db/testdb`, user `sa`)
 
-## 配置说明
-- `application.yml`：默认使用 H2 文件库 `./h2db/testdb`，端口 8082。
-- `application-dev.yml`：同为 H2 文件库，用于 dev profile。
-- 如需 MySQL，改用 `application.yml` 的 MySQL 配置并在启动时指定对应 profile。
+## Config Notes
+- `application.yml`: default H2 file DB `./h2db/testdb`, port 8082.
+- `application-dev.yml`: H2 file DB for dev profile.
+- For MySQL, switch to the MySQL config and run without the dev profile.
 
-## 测试
+## Tests
 ```bash
 mvn test
 ```
-当前集成测试覆盖：主页可达、admin 登录（JWT 校验）、注册+登录（密码哈希验证）。
+Coverage: main page reachable, admin login (JWT), signup/login with hashed passwords.
 
-## 账号提示
-- 默认 admin 账号：`admin / admin`（若不存在，会在测试或启动时自动创建并哈希密码）。
-- 新注册用户默认可报名/评论，创建活动需管理员开启 canCreate 权限。
+## Accounts
+- Default admin: `admin / admin` (created and hashed if missing).
+- New users can enroll/comment; canCreate must be enabled by admin.
 
-## 数据与静态资源
-- H2 数据文件：`backend/h2db/testdb.mv.db`（文件模式，持久化）。
-- 图片存储：`backend/images`（上传的头像/海报）；模板静态资源位于 `backend/src/main/resources/static/`。
+## Data & Static Assets
+- H2 data file: `backend/h2db/testdb.mv.db` (file-based, persistent).
+- Images: `backend/images` (uploads); static assets in `backend/src/main/resources/static/`.
 # NYU Activity Center
 
 A full-stack web application for managing events, posts, and user interactions at NYU. This project uses Spring Boot with Thymeleaf for server-side rendering, providing a traditional MVC architecture. The frontend is built with Thymeleaf templates, Bootstrap 5, and vanilla JavaScript.

@@ -16,13 +16,18 @@ import org.example.backend.service.EventService;
 import org.example.backend.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 该类用于处理活动相关的请求
@@ -44,12 +49,12 @@ public class EventApp {
     jakarta.persistence.EntityManager entityManager;
 
     /**
+     * 创建活动
      * @param token 用户token
      * @param eventPostDto 活动信息
      * @return 是否创建成功
      */
     @PostMapping("/create")
-//    public boolean releaseEvent(@RequestHeader("Authorization") String token, @RequestParam String title, @RequestParam String name, @RequestParam String enrollmentType, @RequestParam String applyStartTime, @RequestParam String applyEndTime, @RequestParam String startTime, @RequestParam String endTime, @RequestParam String imageUrl, @RequestParam String introduction, @RequestParam String mdText, @RequestParam(required = false) long limitCount, @RequestParam(required = false) List<DefinedFormDto> definedForm) {
     public boolean releaseEvent(@RequestHeader("Authorization") String token, @RequestBody EventPostDto eventPostDto) {
         System.out.println("=== releaseEvent Start ===");
         AbstractUser abstractUser = JwtUtil.verifyToken(token);
@@ -123,7 +128,18 @@ public class EventApp {
                     System.err.println("Failed to parse enrollment times: " + e.getMessage());
                     throw new MyException(-1, "报名时间格式错误: " + e.getMessage());
                 }
-                formEnrollment.setDefinedFormEntries(eventPostDto.getDefinedForm().stream().map(DefinedFormDto::toDefinedFormEntry).toList());
+
+                // 防止 definedForm 为空导致 NPE
+                List<DefinedFormDto> definedForms = eventPostDto.getDefinedForm();
+                if (definedForms == null || definedForms.isEmpty()) {
+                    throw new MyException(-1, "表单报名类型必须提供至少一个表单字段");
+                }
+
+                formEnrollment.setDefinedFormEntries(
+                        definedForms.stream()
+                                .map(DefinedFormDto::toDefinedFormEntry)
+                                .toList()
+                );
                 formEnrollment.setEvent(event);
                 event.setAbstractEnrollment(formEnrollment);
                 break;
@@ -157,6 +173,69 @@ public class EventApp {
         System.out.println("=== Event Creation End ===");
         
         return saved;
+    }
+
+    /**
+     * 更新活动（仅作者可改，且不能修改报名方式、容量或表单结构，也不能修改ID）
+     */
+    @PostMapping("/update")
+    public boolean updateEvent(@RequestHeader("Authorization") String token,
+                               @RequestBody EventPostDto dto) {
+        AbstractUser au = JwtUtil.verifyToken(token);
+        if (!(au instanceof User)) {
+            throw new MyException(-1, "Only regular users can update events");
+        }
+        if (dto.getId() == null || dto.getId() <= 0) {
+            throw new MyException(-1, "Event id is required");
+        }
+        Event event = eventService.findEventById(dto.getId());
+        if (event == null) {
+            throw new MyException(-1, "Event not found");
+        }
+        // 只能作者本人修改
+        if (event.getAuthor() == null || event.getAuthor().getId() != au.getId()) {
+            throw new MyException(-1, "Permission denied: only author can edit this event");
+        }
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 不允许修改 enrollmentType、capacity、definedForm 等字段
+        event.setTitle(dto.getTitle());
+        event.setName(dto.getName());
+        event.setIntroduction(dto.getIntroduction());
+        event.setText(dto.getMdText());
+        event.setPosterUrl(dto.getImageUrl());
+
+        try {
+            String startStr = dto.getStartTime();
+            String endStr = dto.getEndTime();
+            if (startStr != null && !startStr.isBlank()) {
+                event.setStartTime(LocalDateTime.parse(startStr, formatter));
+            }
+            if (endStr != null && !endStr.isBlank()) {
+                event.setEndTime(LocalDateTime.parse(endStr, formatter));
+            }
+        } catch (Exception e) {
+            throw new MyException(-1, "Invalid event time format, expected yyyy-MM-dd HH:mm:ss");
+        }
+
+        try {
+            AbstractEnrollment enrollment = event.getAbstractEnrollment();
+            if (enrollment != null) {
+                String applyStartStr = dto.getApplyStartTime();
+                String applyEndStr = dto.getApplyEndTime();
+                if (applyStartStr != null && !applyStartStr.isBlank()) {
+                    enrollment.setStartTime(LocalDateTime.parse(applyStartStr, formatter));
+                }
+                if (applyEndStr != null && !applyEndStr.isBlank()) {
+                    enrollment.setEndTime(LocalDateTime.parse(applyEndStr, formatter));
+                }
+            }
+        } catch (Exception e) {
+            throw new MyException(-1, "Invalid apply time format, expected yyyy-MM-dd HH:mm:ss");
+        }
+
+        return eventService.updateEvent(event);
     }
 
     /**
@@ -346,7 +425,8 @@ public class EventApp {
         if (abstractEnrollment instanceof CountEnrollment countEnrollment) {
             System.out.println("applyEvent - Current count: " + countEnrollment.getCount() + ", Capacity: " + countEnrollment.getCapacity());
             if (countEnrollment.getCapacity() > 0 && countEnrollment.getCount() >= countEnrollment.getCapacity()) {
-                throw new MyException(-1, "Capacity full");
+                // enrollment is full, fail with clear English message
+                throw new MyException(-1, "Enrollment is full. You cannot apply for this event anymore.");
             } else if (eventService.appliedByUser(user.getId(), eventId)) {
                 throw new MyException(-1, "Already applied");
             } else {
@@ -365,14 +445,18 @@ public class EventApp {
             if (formValues == null || formValues.size() != formEnrollment.getDefinedFormEntries().size()) {
                 throw new MyException(-1, "Form values not match");
             } else {
+                // 如果用户已经报名过该表单活动，则直接拒绝，避免重复记录
+                if (eventService.appliedByUser(user.getId(), eventId)) {
+                    throw new MyException(-1, "Already applied");
+                }
+
                 List<User> participants = formEnrollment.getParticipants();
                 if (participants == null) {
                     participants = new ArrayList<>();
                     formEnrollment.setParticipants(participants);
                 }
-                if (!eventService.appliedByUser(user.getId(), eventId)) {
-                    participants.add(user);
-                }
+                participants.add(user);
+
                 enrollForm.setUser(user);
                 enrollForm.setFormEnrollment(formEnrollment);
                 enrollForm.setFormValues(formValues);
@@ -430,7 +514,16 @@ public class EventApp {
                 List<EnrollForm> enrollForms = enrollFormRepository.findByFormEnrollment(formEnrollment);
                 System.out.println("getExcel - FormEnrollment, EnrollForms count: " + (enrollForms != null ? enrollForms.size() : 0));
                 if (enrollForms != null && !enrollForms.isEmpty()) {
+                    // 去重：按 userId 只保留一条记录，避免同一用户重复出现在导出中
+                    Map<Long, EnrollForm> uniqueByUser = new LinkedHashMap<>();
                     for (EnrollForm enrollForm : enrollForms) {
+                        User u = enrollForm.getUser();
+                        if (u != null) {
+                            uniqueByUser.putIfAbsent(u.getId(), enrollForm);
+                        }
+                    }
+
+                    for (EnrollForm enrollForm : uniqueByUser.values()) {
                         row = sheet.createRow(++rowNum);
                         User enrollUser = enrollForm.getUser();
                         if (enrollUser != null) {
@@ -451,9 +544,11 @@ public class EventApp {
                 }
                 List<User> participants = abstractEnrollment.getParticipants();
                 if (participants != null && !participants.isEmpty()) {
-                    System.out.println("getExcel - CountEnrollment, Participants count: " + participants.size());
+                    System.out.println("getExcel - CountEnrollment, Participants count (raw): " + participants.size());
+                    // 去重：按 userId 只导出一次，防止同一用户在 participants 列表中出现多次
+                    Set<Long> seenUserIds = new HashSet<>();
                     for (User participant : participants) {
-                        if (participant != null) {
+                        if (participant != null && seenUserIds.add(participant.getId())) {
                             row = sheet.createRow(++rowNum);
                             row.createCell(0).setCellValue(participant.getUsername());
                             row.createCell(1).setCellValue(participant.getName());
@@ -477,17 +572,39 @@ public class EventApp {
      * @return 收藏活动是否成功
      */
     @PostMapping("/favor")
+    @org.springframework.transaction.annotation.Transactional
     public boolean favorEvent(@RequestHeader("Authorization") String token, @RequestParam("id") long eventId) {
-        User user = (User) JwtUtil.verifyToken(token);
+        AbstractUser tokenUser = JwtUtil.verifyToken(token);
+        if (!(tokenUser instanceof User)) {
+            throw new MyException(-1, "Only regular users can favorite events");
+        }
+        // 使用托管实体，避免懒加载问题
+        User user = (User) abstractUserService.findUserById(tokenUser.getId());
+        if (user == null) {
+            throw new MyException(-1, "User not found");
+        }
+
         Event event = eventService.findEventById(eventId);
+        if (event == null) {
+            throw new MyException(-1, "Event not found");
+        }
+
         List<Event> favoriteEvents = user.getFavouriteEvents();
-        if (!favoriteEvents.contains(event)) {
-            favoriteEvents.add(event);
+        if (favoriteEvents == null) {
+            favoriteEvents = new java.util.ArrayList<>();
+            user.setFavouriteEvents(favoriteEvents);
         } else {
+            favoriteEvents.size(); // 触发懒加载，在事务内不会抛错
+        }
+
+        boolean alreadyFavored = favoriteEvents.stream()
+                .anyMatch(e -> e != null && e.getId() == event.getId());
+        if (alreadyFavored) {
             throw new MyException(-1, "Event already favored");
         }
-        user.setFavouriteEvents(favoriteEvents);
-        return eventService.updateEvent(event);
+        favoriteEvents.add(event);
+        abstractUserService.saveUser(user);
+        return true;
     }
 
     /**
@@ -496,17 +613,40 @@ public class EventApp {
      * @return 取消收藏活动是否成功
      */
     @PostMapping("/unfavor")
+    @org.springframework.transaction.annotation.Transactional
     public boolean unfavorEvent(@RequestHeader("Authorization") String token, @RequestParam("id") long eventId) {
-        User user = (User) JwtUtil.verifyToken(token);
+        AbstractUser tokenUser = JwtUtil.verifyToken(token);
+        if (!(tokenUser instanceof User)) {
+            throw new MyException(-1, "Only regular users can unfavorite events");
+        }
+        // 使用托管实体，避免懒加载问题
+        User user = (User) abstractUserService.findUserById(tokenUser.getId());
+        if (user == null) {
+            throw new MyException(-1, "User not found");
+        }
+
         Event event = eventService.findEventById(eventId);
+        if (event == null) {
+            throw new MyException(-1, "Event not found");
+        }
+
         List<Event> favoriteEvents = user.getFavouriteEvents();
-        if (favoriteEvents.contains(event)) {
-            favoriteEvents.remove(event);
+        if (favoriteEvents == null) {
+            throw new MyException(-1, "Event not favored");
         } else {
+            favoriteEvents.size(); // 触发懒加载
+        }
+
+        Event toRemove = favoriteEvents.stream()
+                .filter(e -> e != null && e.getId() == event.getId())
+                .findFirst()
+                .orElse(null);
+        if (toRemove == null) {
             throw new MyException(-1, "Event not favored");
         }
-        user.setFavouriteEvents(favoriteEvents);
-        return eventService.updateEvent(event);
+        favoriteEvents.remove(toRemove);
+        abstractUserService.saveUser(user);
+        return true;
     }
 
     /**
@@ -516,18 +656,34 @@ public class EventApp {
      * @return 评分是否成功
      */
     @PostMapping("/grade")
-    public boolean gradeEvent(@RequestHeader("Authorization") String token, @RequestParam("id") long eventId, @RequestParam("grade") int grade) {
-        User user = (User) JwtUtil.verifyToken(token);
+    @Transactional
+    public boolean gradeEvent(@RequestHeader("Authorization") String token,
+                              @RequestParam("id") long eventId,
+                              @RequestParam("grade") int grade) {
+        // 只用 userId + eventId 查询 / 更新评分记录，不再访问 user.scoredEvents 懒加载集合
+        AbstractUser tokenUser = JwtUtil.verifyToken(token);
+        if (!(tokenUser instanceof User)) {
+            throw new MyException(-1, "Only regular users can grade events");
+        }
+        long userId = tokenUser.getId();
+
         Event event = eventService.findEventById(eventId);
-        List<Event> scoredEvents = user.getScoredEvents();
-        if (!scoredEvents.contains(event)) {
+        if (event == null) {
+            throw new MyException(-1, "Event not found");
+        }
+
+        // 通过 Score 表判断是否第一次评分，避免访问懒加载集合
+        long previousScore = eventService.getScore(userId, eventId);
+        boolean firstTime = (previousScore == 0); // 约定未评分返回 0，评分区间为 1-5
+
+        if (firstTime) {
             event.setScore((event.getScore() * event.getScoreCount() + grade) / (event.getScoreCount() + 1));
             event.setScoreCount(event.getScoreCount() + 1);
         } else {
-            long previousScore = eventService.getScore(user.getId(), eventId);
             event.setScore((event.getScore() * event.getScoreCount() - previousScore + grade) / event.getScoreCount());
         }
-        eventService.saveScore(user.getId(), eventId, grade);
+
+        eventService.saveScore(userId, eventId, grade);
         eventService.updateEvent(event);
         return true;
     }
@@ -548,7 +704,23 @@ public class EventApp {
      */
     @GetMapping("favored")
     public long[] getFavoredEvents(@RequestHeader("Authorization") String token) {
-        User user = (User) JwtUtil.verifyToken(token);
-        return user.getFavouriteEvents().stream().mapToLong(Event::getId).toArray();
+        AbstractUser tokenUser = JwtUtil.verifyToken(token);
+        if (!(tokenUser instanceof User)) {
+            throw new MyException(-1, "Only regular users can have favorite events");
+        }
+        // 在一个短事务中加载用户的收藏列表并返回 ID，避免懒加载异常
+        User user = (User) abstractUserService.findUserById(tokenUser.getId());
+        if (user == null) {
+            throw new MyException(-1, "User not found");
+        }
+        List<Event> favorites = user.getFavouriteEvents();
+        if (favorites == null) {
+            return new long[0];
+        }
+        favorites.size(); // 触发懒加载
+        return favorites.stream()
+                .filter(java.util.Objects::nonNull)
+                .mapToLong(Event::getId)
+                .toArray();
     }
 }

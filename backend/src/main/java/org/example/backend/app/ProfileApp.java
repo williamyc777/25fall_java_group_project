@@ -4,6 +4,7 @@ package org.example.backend.app;
 import org.example.backend.config.MyException;
 import org.example.backend.domain.AbstractUser;
 import org.example.backend.domain.Post;
+import org.example.backend.domain.User;
 import org.example.backend.dto.AbstractUserDto;
 import org.example.backend.dto.PostDto;
 import org.example.backend.service.AbstractUserService;
@@ -177,5 +178,55 @@ public class ProfileApp {
             eventDtoList.add(new org.example.backend.dto.EventBriefDto(event));
         }
         return eventDtoList;
+    }
+
+    /**
+     * 获取用户收藏的活动
+     * @param token 用户token
+     * @return List<EventBriefDto>
+     */
+    @GetMapping("/favorite/events")
+    @org.springframework.transaction.annotation.Transactional
+    public List<org.example.backend.dto.EventBriefDto> getFavoriteEvents(@RequestHeader("Authorization") String token) {
+        AbstractUser user = JwtUtil.verifyToken(token);
+        if (!(user instanceof User u)) {
+            throw new MyException(-1, "Only user can have favorite events");
+        }
+        List<org.example.backend.dto.EventBriefDto> result = new ArrayList<>();
+        if (u.getFavouriteEvents() != null) {
+            // 触发懒加载
+            u.getFavouriteEvents().size();
+            for (org.example.backend.domain.Event ev : u.getFavouriteEvents()) {
+                result.add(new org.example.backend.dto.EventBriefDto(ev));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 获取用户收藏的帖子
+     * @param token 用户token
+     * @return List<PostDto>
+     */
+    @GetMapping("/favorite/posts")
+    @org.springframework.transaction.annotation.Transactional
+    public List<PostDto> getFavoritePosts(@RequestHeader("Authorization") String token) {
+        AbstractUser user = JwtUtil.verifyToken(token);
+        if (!(user instanceof User u)) {
+            throw new MyException(-1, "Only user can have favorite posts");
+        }
+        List<PostDto> result = new ArrayList<>();
+        if (u.getFavouritePosts() != null) {
+            // 触发懒加载
+            u.getFavouritePosts().size();
+            for (Post p : u.getFavouritePosts()) {
+                try {
+                    result.add(new PostDto(p));
+                } catch (Exception e) {
+                    System.err.println("getFavoritePosts - error converting post " + p.getId() + ": " + e.getMessage());
+                }
+            }
+        }
+        return result;
     }
 }
