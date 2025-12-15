@@ -7,6 +7,7 @@ import org.example.backend.api.UserRepository;
 import org.example.backend.domain.AbstractUser;
 import org.example.backend.domain.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,18 +21,31 @@ public class AbstractUserServiceImpl implements AbstractUserService {
     private UserRepository userRepository;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 //    @Autowired
 //    JedisService jedisService;
 
     @Override
     public AbstractUser checkUser(String username, String password) {
-        return abstractUserRepository.findByUsernameAndPassword(username, password);
+        AbstractUser user = abstractUserRepository.findByUsername(username);
+        if (user == null) {
+            return null;
+        }
+        return passwordEncoder.matches(password, user.getPassword()) ? user : null;
     }
 
     @Override
     @Transactional
     public boolean saveUser(AbstractUser abstractUser) {
         System.out.println("saveUser - Before save, avatar: " + abstractUser.getAvatar());
+        if (abstractUser.getPassword() != null) {
+            String pwd = abstractUser.getPassword();
+            // avoid double-encoding if already BCrypt
+            if (!(pwd.startsWith("$2a$") || pwd.startsWith("$2b$") || pwd.startsWith("$2y$"))) {
+                abstractUser.setPassword(passwordEncoder.encode(pwd));
+            }
+        }
         AbstractUser saved = abstractUserRepository.save(abstractUser);
         // 立即刷新到数据库，确保数据已持久化
         entityManager.flush();
@@ -65,6 +79,11 @@ public class AbstractUserServiceImpl implements AbstractUserService {
     @Override
     public AbstractUser findUserByUsername(String username) {
         return abstractUserRepository.findByUsername(username);
+    }
+
+    @Override
+    public boolean matchesPassword(String rawPassword, String encodedPassword) {
+        return passwordEncoder.matches(rawPassword, encodedPassword);
     }
 
     @Override

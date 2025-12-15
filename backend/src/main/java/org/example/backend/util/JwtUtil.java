@@ -15,64 +15,52 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-    private static final Long EXPIRATION = 604800000L;//7days(ms)
+    private static final Long EXPIRATION = 604800000L; // 7 days(ms)
+    /** Use a fixed server-side secret instead of user password */
+    private static final String SECRET = "nyu-activity-center-jwt-secret-please-change";
     private static AbstractUserService abstractUserService;
-//    private static TeacherService teacherService;
-//    private static StudentService studentService;
-
 
     @Autowired
     public void setUserService(AbstractUserService abstractUserService) {
         JwtUtil.abstractUserService = abstractUserService;
     }
 
-//    @Autowired
-//    public void setTeacherService(TeacherService teacherService) {
-//        JwtUtil.teacherService = teacherService;
-//    }
-
-//    @Autowired
-//    public void setStudentService(StudentService studentService) {
-//        JwtUtil.studentService = studentService;
-//    }
-
-    public static String getToken(String userId, String password) {
+    /** Create token with userId and fixed secret */
+    public static String getToken(String userId) {
         Date expireDate = new Date(System.currentTimeMillis() + EXPIRATION);
         Map<String, Object> header = new HashMap<>();
         header.put("alg", "HS256");
         header.put("typ", "JWT");
-        return JWT.create().withHeader(header).withClaim("userId", userId).withExpiresAt(expireDate).sign(Algorithm.HMAC256(password));
+        return JWT.create()
+                .withHeader(header)
+                .withClaim("userId", userId)
+                .withExpiresAt(expireDate)
+                .sign(Algorithm.HMAC256(SECRET));
     }
 
+    /** Verify token and load user by id */
     public static AbstractUser verifyToken(String token) {
-        DecodedJWT jwt;
-        AbstractUser user;
         try {
-            long userId = Integer.parseInt(JWT.decode(token).getClaim("userId").asString());
-            user = abstractUserService.findUserById(userId);
-            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(user.getPassword())).build();
-            jwt = verifier.verify(token);
-            if (jwt.getExpiresAt().before(new Date())) {
-                //token expired
+            JWTVerifier verifier = JWT.require(Algorithm.HMAC256(SECRET)).build();
+            DecodedJWT jwt = verifier.verify(token);
+            if (jwt.getExpiresAt() != null && jwt.getExpiresAt().before(new Date())) {
                 return null;
             }
+            long userId = Long.parseLong(jwt.getClaim("userId").asString());
+            return abstractUserService.findUserById(userId);
         } catch (Exception e) {
-            //token decoding error
             System.out.println(e.getMessage());
             return null;
         }
-        //token verified successfully
-        return user;
     }
 
     public static long getIdByToken(String token) {
-        long userId = -1;
         try {
-            userId = Integer.parseInt(JWT.decode(token).getClaim("userId").asString());
+            DecodedJWT jwt = JWT.decode(token);
+            return Long.parseLong(jwt.getClaim("userId").asString());
         } catch (Exception e) {
-            //token decoding error
             System.out.println(e.getMessage());
+            return -1;
         }
-        return userId;
     }
 }

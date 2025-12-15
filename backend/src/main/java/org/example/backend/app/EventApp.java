@@ -52,7 +52,11 @@ public class EventApp {
 //    public boolean releaseEvent(@RequestHeader("Authorization") String token, @RequestParam String title, @RequestParam String name, @RequestParam String enrollmentType, @RequestParam String applyStartTime, @RequestParam String applyEndTime, @RequestParam String startTime, @RequestParam String endTime, @RequestParam String imageUrl, @RequestParam String introduction, @RequestParam String mdText, @RequestParam(required = false) long limitCount, @RequestParam(required = false) List<DefinedFormDto> definedForm) {
     public boolean releaseEvent(@RequestHeader("Authorization") String token, @RequestBody EventPostDto eventPostDto) {
         System.out.println("=== releaseEvent Start ===");
-        User user = (User) JwtUtil.verifyToken(token);
+        AbstractUser abstractUser = JwtUtil.verifyToken(token);
+        if (!(abstractUser instanceof User)) {
+            throw new MyException(-1, "Only regular users can create events. Please login with a user account.");
+        }
+        User user = (User) abstractUser;
         System.out.println("releaseEvent - User ID: " + user.getId());
         System.out.println("releaseEvent - Username: " + user.getUsername());
         

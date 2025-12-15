@@ -1,46 +1,30 @@
-#server:
-#  port: 8082
-#spring:
-#  datasource:
-#    driver-class-name: org.postgresql.Driver
-#    url: jdbc:postgresql://localhost:5432/cs304_database
-##    url: jdbc:postgresql://postgres:5432/cs304_database
-#    username: postgres
-#    password: postgres
-#  jackson:
-#    default-property-inclusion: NON_NULL
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#      dialect: org.hibernate.dialect.PostgreSQL92Dialect
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        temp:
-#          use_jdbc_metadata_defaults: true
-#image-server:
-##  path: backend/src/main/resources/images
-#  path: ./images
+# 开发环境配置 - 使用H2文件数据库，数据持久化
 server:
   port: 8082
 
 spring:
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/cs304_database?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: LYX112601lyx
-  jackson:
-    default-property-inclusion: NON_NULL
+    driver-class-name: org.h2.Driver
+    # 使用文件模式，数据保存在项目根目录下的 h2db 文件夹（禁用 AUTO_SERVER 以避免受限环境下的端口绑定问题）
+    url: jdbc:h2:file:./h2db/testdb;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
   jpa:
     hibernate:
+      # 使用 update 而不是 create-drop，保留已有数据
       ddl-auto: update
-      dialect: org.hibernate.dialect.MySQL8Dialect
+      dialect: org.hibernate.dialect.H2Dialect
     show-sql: true
     properties:
       hibernate:
         temp:
           use_jdbc_metadata_defaults: true
+  jackson:
+    default-property-inclusion: NON_NULL
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
@@ -54,3 +38,5 @@ spring:
 
 image-server:
   path: ./images
+
+

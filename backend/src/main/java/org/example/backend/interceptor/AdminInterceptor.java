@@ -15,8 +15,7 @@ public class AdminInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String token = request.getHeader("Authorization");
         AbstractUser abstractUser = JwtUtil.verifyToken(token);
-        assert abstractUser != null;
-        if (abstractUser instanceof Admin) {
+        if (abstractUser == null || !(abstractUser instanceof Admin)) {
             System.out.println(request.getRequestURL());
             System.out.println("no authority");
             throw new MyException(3, "no authority");

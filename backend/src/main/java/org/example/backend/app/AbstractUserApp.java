@@ -49,7 +49,7 @@ public class AbstractUserApp {
             throw new MyException(4, "incorrect username or password");
         }
         System.out.println(user.getId());
-        return JwtUtil.getToken(String.valueOf(user.getId()), password);
+        return JwtUtil.getToken(String.valueOf(user.getId()));
     }
 
     /**

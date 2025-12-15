@@ -19,5 +19,10 @@ public interface AbstractUserService {
 
     AbstractUser findUserByUsername(String username);
 
+    /**
+     * Match raw password with stored hash.
+     */
+    boolean matchesPassword(String rawPassword, String encodedPassword);
+
     List<User> findAllUsers();
 }
