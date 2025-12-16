@@ -1,5 +1,6 @@
 # NYU Activity Center (Spring Boot + Thymeleaf)
 
+## Please refer to the proposal document for the project's features and the advanced topics used. For the project structure and running instructions, please see the README. A short demonstration video is also available on Brightspace.
 Campus events and social platform with event creation/enrollment, posts, private chat, and admin panel. Built with Spring Boot + Thymeleaf SSR, persisted with H2 (dev) or MySQL (prod).
 
 ## Tech Stack & Highlights
